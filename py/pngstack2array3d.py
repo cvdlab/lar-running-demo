@@ -10,8 +10,27 @@ from scipy.cluster.vq import kmeans,vq
 import png
 import matplotlib.pyplot as plt
 from scipy import ndimage
+import struct
 
-SLICE_CALC = 3
+def getImageData(fileName):
+	def get_image_info(data):
+		if is_png(data):
+			w, h = struct.unpack('>LL', data[16:24])
+			width = int(w)
+			height = int(h)
+		else:
+			raise Exception('not a png image')
+		return width, height
+
+
+	def is_png(data):
+		return (data[:8] == '\211PNG\r\n\032\n'and (data[12:16] == 'IHDR'))
+		
+	with open('foo.png', 'rb') as f:
+        data = f.read()
+		
+	return get_image_info(data)
+
 
 def centroidcalc(path, IMAGE, colors):
 	"""
@@ -27,7 +46,7 @@ def centroidcalc(path, IMAGE, colors):
 	# -----------------------------------------------------------------------------
 	image2d = []
 	filename = path+str(IMAGE)+'.png'
-	print "filename =",filename
+
 	r=png.Reader(filename)
 	content = r.read()
 	page = [list(row) for k,row in enumerate(content[2])]
@@ -42,10 +61,6 @@ def centroidcalc(path, IMAGE, colors):
 	pixel = reshape(image3d[0],(image3d[0].shape[0]*image3d[0].shape[1],1))
 	# performing the clustering
 	centroids,_ = kmeans(pixel,colors) # "colors" colors will be found
-
-	if __name__ == "__main__":
-		print "Centroids"
-		print centroids
 
 	return pixel,centroids
 	
@@ -64,20 +79,12 @@ def pngstack2array3d(path, MIN_SLICE, MAX_SLICE, colors, pixel, centroids):
 	image2d = []
 	for slice in range(MIN_SLICE, MAX_SLICE):
 		filename = path+str(slice)+'.png'
-		print "filename =",filename
 		r=png.Reader(filename)
 		content = r.read()
 		page = [list(row) for k,row in enumerate(content[2])]
 		image2d.append(page)
 	
 	image3d = array(image2d,dtype='uint8')
-
-	if __name__ == "__main__":
-		image3d.shape, image3d.dtype
-		image3d
-		plt.imshow(image3d[SLICE_CALC])
-		plt.show()
-		print "Now starting the centroid"
 
 	# -----------------------------------------------------------------------------
 	# -----------------------------------------------------------------------------
@@ -99,45 +106,6 @@ def pngstack2array3d(path, MIN_SLICE, MAX_SLICE, colors, pixel, centroids):
 		centers_idx = np.reshape(qnt,image3d[page].shape)
 		image3d[page] = centroids[centers_idx].reshape(image3d[page].shape)
 
-		# if __name__ == "__main__":
-			# page show
-			# plt.imshow(image3d[page])
-			# plt.show()
-			# print image3d[page][1]
-
-	if __name__ == "__main__":
-		# page show
-		plt.imshow(image3d[0])
-		plt.show()
-		print image3d[0][1]
-
-		plt.imshow(image3d[SLICE_CALC])
-		plt.show()
-		print image3d[SLICE_CALC][1]
-
-		plt.imshow(image3d[len(image3d)-1])
-		plt.show()
-		print image3d[len(image3d)-1][1]
-
 	# return a scipy ndarray 
 	# -------------------------------------------------------------------------
 	return image3d,colors,centroids
-	
-
-pixel,centr = centroidcalc('SLICES/', 622, 2)
-pngstack2array3d('SLICES/', 620, 625, 2, pixel, centr)
-"""
-== Conversione di un archivio jpeg in stack di png
-
-Import all images to photoshop.
-File > Scripts > Load Files into stack
-Go to Layers panel and select all layers
-Got to animation panel and Select "Create frame animation"
-Go to Animation panel and select the small menu symbol on the top right of panel
-Select "Make frames from layers"
-File > Export > Render video
-Select folder
-Select Photoshop Image Sequence
-Select PNG
-Render
-"""

@@ -43,28 +43,6 @@ def timer_stop():
         print "Timer stop :", tm.time() - timer_last;
 
 # ------------------------------------------------------------
-# Configuration parameters
-# ------------------------------------------------------------
-
-#nx,ny,nz
-nx = ny = nz = 64
-# log(1, ["nx, ny, nz = " + str(nx) + "," + str(ny) + "," + str(nz)]);
-
-chunksize = nx * ny + nx * nz + ny * nz + 3 * nx * ny * nz
-# log(1, ["chunksize = " + str(chunksize)]);
-# chunksize = 798720 (nx=ny=nz=64)
-
-# MAX_CHUNKS = 1024 #1024
-# log(1, ["MAX_CHUNKS = " + str(MAX_CHUNKS)]);
-
-# Vertex and faces
-V = []
-FV = []
-
-# ------------------------------------------------------------
-
-def calculateChunkSize():
-	chunksize = nx * ny + nx * nz + ny * nz + 3 * nx * ny * nz
 
 def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
 
@@ -77,46 +55,13 @@ def invertIndex(nx,ny,nz):
 		return b0,b1,b2
 	return invertIndex0
 
-# Construction of vertex coordinates (nx * ny * nz)
-# ------------------------------------------------------------
-
-def createVertices():
-	timer_start("V");
-
-	V = [[x,y,z] for z in range(nz+1) for y in range(ny+1) for x in range(nx+1) ]
-
-	timer_stop();
-	log(3, ["V = " + str(V)]);
-
-# Construction of FV relation (nx * ny * nz)
-# ------------------------------------------------------------
-
-def createFacesVertices():
-
-	timer_start("v2coords");
-
-	v2coords = invertIndex(nx,ny,nz)
-
-	timer_stop();
-
-	timer_start("h");
-
-	for h in range(len(V)):
-		x,y,z = v2coords(h)
-		if (x < nx) and (y < ny): FV.append([h,ind(x+1,y,z),ind(x,y+1,z),ind(x+1,y+1,z)])
-		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])
-		if (y < ny) and (z < nz): FV.append([h,ind(x,y+1,z),ind(x,y,z+1),ind(x,y+1,z+1)])
-
-	timer_stop();
-	log(3, ["FV = " + str(FV)]);
-
 # ------------------------------------------------------------
 
 # inputFile = output.bin
 # outputVtx = outputVtx.obj
 # outputFaces = outputFaces.obj
 
-def readFile(V,FV,inputFile="output.bin",outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
+def readFile(V,FV,chunksize,inputFile="output.bin",outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
 	with open(inputFile, "rb") as file:
 		with open(outputVtx, "w") as fileVertex:
 			with open(outputVtx, "w") as fileFaces:
@@ -200,6 +145,7 @@ def main(argv):
 		print 'bin2opj.py -x <borderX> -y <borderY> -z <borderZ> -i <inputfile> -f <outputfacefile> -v <outputverticesfile>'
 		sys.exit(2)
 	
+	nx = ny = nz = 64
 	mandatory = 4
 	#Files
 	FILE_IN = ''
@@ -228,10 +174,18 @@ def main(argv):
 		print 'Not all arguments where given'
 		sys.exit(2)
 		
-	calculateChunkSize()
-	createVertices()
-	createFacesVertices()
-	readFile(V,FV,FILE_IN,FILE_VO,FILE_FO)
+	chunksize = nx * ny + nx * nz + ny * nz + 3 * nx * ny * nz
+	V = [[x,y,z] for z in range(nz+1) for y in range(ny+1) for x in range(nx+1) ]
+	
+	v2coords = invertIndex(nx,ny,nz)
+
+	for h in range(len(V)):
+		x,y,z = v2coords(h)
+		if (x < nx) and (y < ny): FV.append([h,ind(x+1,y,z),ind(x,y+1,z),ind(x+1,y+1,z)])
+		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])
+		if (y < ny) and (z < nz): FV.append([h,ind(x,y+1,z),ind(x,y,z+1),ind(x,y+1,z+1)])
+
+	readFile(V,FV,chunksize,FILE_IN,FILE_VO,FILE_FO)
 			
 if __name__ == "__main__":
    main(sys.argv[1:])

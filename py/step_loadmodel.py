@@ -22,7 +22,7 @@ def main(argv):
 	
 	for opt, arg in opts:
 		if opt == '-i':
-			FILE_IN= arg
+			FILE_IN = arg
 			mandatory = mandatory - 1
 			
 	if mandatory != 0:

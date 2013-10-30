@@ -427,50 +427,24 @@ def csrBoundaryFilter(CSRm, facetLengths):
 #------------------------------------------------------------------
 """
 def csrBoundaryFilter(CSRm, facetLengths):
-    print "calcolo max per =\n", len(CSRm.data)
+    
     maxs = [max(CSRm[k].data) for k in range(CSRm.shape[0])]
     inputShape = CSRm.shape
-    print "converto in coo\n"
+    
     coo = CSRm.tocoo()
 
-    print "creo array vuoti\n"
-    row = np.array([]).astype(np.int32);
-    col = np.array([]).astype(np.int32);
-    data = np.array([]).astype(np.int32);
+    row = [] # np.array([]).astype(np.int32);
+    col = [] # np.array([]).astype(np.int32);
+    data = [] # np.array([]).astype(np.int32);
 
-    print "coo filter\n"
-    timer_start("coo filter")
     for k in range(len(coo.data)):      
         if coo.data[k] == maxs[coo.row[k]]:
-            row = np.append(row, [coo.row[k]], axis=0).astype(np.int32)
-            col = np.append(col, [coo.col[k]], axis=0).astype(np.int32)
-            data = np.append(data, [1], axis=0).astype(np.int32)
-        if k % 100000 == 0:
-            print "Elemento = \n", k
-    timer_stop()
-
-'''
-print "creo array vuoti\n"
-    row = np.array([]).astype(np.int32);
-    col = np.array([]).astype(np.int32);
-    data = np.array([]).astype(np.int32);
-
-    print "coo filter\n"
-    timer_start("coo filter")
-    for k in range(len(coo.data)):      
-        if coo.data[k] == maxs[coo.row[k]]:
-            row = np.append(row, [coo.row[k]], axis=0).astype(np.int32)
-            col = np.append(col, [coo.col[k]], axis=0).astype(np.int32)
-            data = np.append(data, [1], axis=0).astype(np.int32)
-        if k % 100000 == 0:
-            print "Elemento = \n", k
-    timer_stop()
-'''
+            row.append(coo.row[k])
+            col.append(coo.col[k])
+            data.append(1)
     
-    print "creo nuova coo\n"
-    mtx = coo_matrix((data, (row, col)), shape=inputShape)
+    mtx = coo_matrix( (np.array(data).astype(np.int32), ( np.array(row).astype(np.int32), np.array(col).astype(np.int32) )), shape=inputShape)
 
-    print "coo -> csr\n"
     out = mtx.tocsr()
     return out
 """
