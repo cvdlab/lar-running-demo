@@ -1,0 +1,21 @@
+- which python, pyplasm, numpy, scipy, dcm2pnm, convert, java, javac, mvn, opencl
+
+
+
+
+- apri directory input
+
+- copia in altra dir
+
+- se dcm => dcm2pnm +G +on in out.png
+- se jpg/png => convert -colorspace gray input output.png
+- e rm old
+
+- prendi lista file
+- converti in nomi %d
+
+- prendi best image/first image -> trova dimensioni
+
+- genera bordo [?]
+
+- trafila py
