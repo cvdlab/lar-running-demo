@@ -10,7 +10,7 @@ if [ -z "$PYTHON" ]; then
 	exit 1
 fi
 
-$PYTHON ../py/packages/check-packages.py
+$PYTHON $(pwd)/py/packages/check-packages.py
 
 if [ $? -ne 0 ]; then
         echo "Missing python modules, install them"
