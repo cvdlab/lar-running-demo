@@ -9,6 +9,7 @@ import time as tm
 import gc
 from pngstack2array3d import *
 import struct
+import getopt, sys
 
 # ------------------------------------------------------------
 # Logging & Timer 
@@ -53,17 +54,6 @@ PNG_EXTENSION = ".png"
 # ------------------------------------------------------------
 # Utility toolbox
 # ------------------------------------------------------------
-
-def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
-
-def invertIndex(nx,ny,nz):
-	nx,ny,nz = nx+1,ny+1,nz+1
-	def invertIndex0(offset):
-		a0, b0 = offset / nx, offset % nx
-		a1, b1 = a0 / ny, a0 % ny
-		a2, b2 = a1 / nz, a1 % nz
-		return b0,b1,b2
-	return invertIndex0
 
 def countFilesInADir(directory):
 	return len([name for name in os.listdir(directory) if os.path.isfile(name)])
@@ -195,10 +185,12 @@ def prepareComputation(imageDx, imageDy, imageDz, colors, calculateout, V, FV, I
 	pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
 	
 def main(argv):
+	ARGS_STRING = 'Args: -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputfiles> -q <bestimage>'
+
 	try:
 		opts, args = getopt.getopt(argv,"i:f:v:x:y:z:")
 	except getopt.GetoptError:
-		print 'computechains.py -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputfiles> -q <bestimage>'
+		print ARGS_STRING
 		sys.exit(2)
 	
 	nx = ny = nz = imageDx = imageDy = imageDz = 64
@@ -239,8 +231,20 @@ def main(argv):
 			
 	if mandatory != 0:
 		print 'Not all arguments where given'
+		print ARGS_STRING
 		sys.exit(2)
 		
+	def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
+
+	def invertIndex(nx,ny,nz):
+		nx,ny,nz = nx+1,ny+1,nz+1
+		def invertIndex0(offset):
+			a0, b0 = offset / nx, offset % nx
+			a1, b1 = a0 / ny, a0 % ny
+			a2, b2 = a1 / nz, a1 % nz
+			return b0,b1,b2
+		return invertIndex0
+	
 	chunksize = nx * ny + nx * nz + ny * nz + 3 * nx * ny * nz
 	V = [[x,y,z] for z in range(nz+1) for y in range(ny+1) for x in range(nx+1) ]
 	

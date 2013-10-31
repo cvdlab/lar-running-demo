@@ -184,42 +184,12 @@ def cooCreateFromBrc(ListOfListOfInt):
                    for col in row ]
     return COOm
 
-if __name__ == "__main__" and False:
-    print "\n>>> cooCreateFromBrc"
-    V = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
-    FV = [[0, 1, 3], [1, 2, 4], [1, 3, 4], [2, 4, 5]]
-    EV = [[0,1],[0,3],[1,2],[1,3],[1,4],[2,4],[2,5],[3,4],[4,5]]
-    cooFV = cooCreateFromBrc(FV)
-    cooEV = cooCreateFromBrc(EV)
-    print "\ncooCreateFromBrc(FV) =\n", cooFV
-    print "\ncooCreateFromBrc(EV) =\n", cooEV
-
 
 #------------------------------------------------------------------
 def csrCreateFromCoo(COOm):
     CSRm = format(COOm,"csr")
     return CSRm
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrCreateFromCoo"
-    csrFV = csrCreateFromCoo(cooFV)
-    csrEV = csrCreateFromCoo(cooEV)
-    print "\ncsr(FV) =\n", repr(csrFV)
-    print "\ncsr(EV) =\n", repr(csrEV)
-
-
-
-#------------------------------------------------------------------
-"""
-def csrCreate(BRCm,shape=(0,0)):
-    if shape == (0,0):
-        return csrCreateFromCoo(cooCreateFromBrc(BRCm))
-    else:
-        CSRm = scipy.sparse.csr_matrix(shape)
-        for i,j,v in cooCreateFromBrc(BRCm):
-            CSRm[i,j] = v
-        return CSRm
-"""
 #------------------------------------------------------------------
 def csrCreate(BRCm,shape=(0,0)):
     if shape == (0,0):
@@ -231,33 +201,15 @@ def csrCreate(BRCm,shape=(0,0)):
             CSRm[i,j] = v
         return CSRm
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrCreateFromCoo"
-    V = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
-    FV = [[0, 1, 3], [1, 2, 4], [1, 3, 4], [2, 4, 5]]
-    csrFV = csrCreate(FV)
-    print "\ncsrCreate(FV) =\n", csrFV
-
-
 #------------------------------------------------------------------
 def csrGetNumberOfRows(CSRm):
     Int = CSRm.shape[0]
     return Int
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrGetNumberOfRows"
-    print "\ncsrGetNumberOfRows(csrFV) =", csrGetNumberOfRows(csrFV)
-    print "\ncsrGetNumberOfRows(csrEV) =", csrGetNumberOfRows(csrEV)
-
 #------------------------------------------------------------------
 def csrGetNumberOfColumns(CSRm):
     Int = CSRm.shape[1]
     return Int
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrGetNumberOfColumns"
-    print "\ncsrGetNumberOfColumns(csrFV) =", csrGetNumberOfColumns(csrFV)
-    print "\ncsrGetNumberOfColumns(csrEV) =", csrGetNumberOfColumns(csrEV)
 
 #------------------------------------------------------------------
 def csrToMatrixRepresentation(CSRm):
@@ -269,11 +221,6 @@ def csrToMatrixRepresentation(CSRm):
         ScipyMat[triple[0],triple[1]] = triple[2]
     return ScipyMat
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrToMatrixRepresentation"
-    print "\nFV =\n", csrToMatrixRepresentation(csrFV)
-    print "\nEV =\n", csrToMatrixRepresentation(csrEV)
-
 #------------------------------------------------------------------
 def csrToBrc(CSRm):
     nrows = csrGetNumberOfRows(CSRm)
@@ -281,11 +228,6 @@ def csrToBrc(CSRm):
     out = [[] for i in range (nrows)]
     [out[i].append(j) for i,j in zip(C.row,C.col)]
     return out
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrToBrc"
-    print "\nFV =\n", csrToBrc(csrFV)
-    print "\nEV =\n", csrToBrc(csrEV)
 
 #------------------------------------------------------------------
 #--matrix utility layer--------------------------------------------
@@ -296,56 +238,25 @@ def csrIsA(CSRm):
     test = CSRm.check_format(True)
     return test==None
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrIsA"
-    print "\ncsrIsA(csrFV) =",csrIsA(csrFV)
-
 #------------------------------------------------------------------
 def csrGet(CSRm,row,column):
     Num = CSRm[row,column]
     return Num
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrGet"
-    print "\ncsrGet(csrFV,2,3) =",csrGet(csrFV,2,3)
-    print "\ncsrGet(csrFV,1,3) =",csrGet(csrFV,1,3)
 
 #------------------------------------------------------------------
 def csrSet(CSRm,row,column,value):
     CSRm[row,column] = value
     return None
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrSet"
-    csrSet(csrFV,2,3,10)
-    print "\ncsrSet(csrFV,2,3,10) =",csrGet(csrFV,2,3)
-    csrSet(csrFV,2,3,1)
-    print "\ncsrSet(csrFV,2,3,1) =",csrGet(csrFV,2,3)
-
 #------------------------------------------------------------------
 def csrAppendByRow(CSRm1,CSRm2):
     CSRm = vstack([CSRm1,CSRm2])
     return CSRm
 
-if __name__ == "__main__" and False:
-    
-    print "\n>>> csrAppendByRow"
-    CSRm = csrAppendByRow(csrFV,csrEV)
-    print "\ncsrAppendByRow(csrFV,csrEV) =\n", \
-        csrToMatrixRepresentation(CSRm)
-
-
 #------------------------------------------------------------------
 def csrAppendByColumn(CSRm1,CSRm2):
     CSRm = hstack([CSRm1,CSRm2])
     return CSRm
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrAppendByColumn"
-    CSRm = csrAppendByColumn(csrFV,csrFV)
-    print "\ncsrAppendByColumn(csrFV,csrFV) =\n", \
-        csrToMatrixRepresentation(CSRm)
-
 
 #------------------------------------------------------------------
 def csrSplitByRow(CSRm,k):
@@ -353,79 +264,16 @@ def csrSplitByRow(CSRm,k):
     CSRm2 = CSRm[k:]
     return CSRm1,CSRm2
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrSplitByRow"
-    CSRm1,CSRm2 = csrSplitByRow(csrFV,2)
-    print "\ncsrSplitByRow(csrFV,2) ="
-    print csrToMatrixRepresentation(CSRm1)
-    print csrToMatrixRepresentation(CSRm2)
-
-
 #------------------------------------------------------------------
 def csrSplitByColumn(CSRm,k):
     CSRm1 = CSRm.T[:k]
     CSRm2 = CSRm.T[k:]
     return CSRm1.T,CSRm2.T
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrSpliceByColumn"
-    CSRm1,CSRm2 = csrSplitByColumn(csrFV,4)
-    print "\ncsrSplitByColumn(csrFV,4) ="
-    print csrToMatrixRepresentation(CSRm1)
-    print csrToMatrixRepresentation(CSRm2)
-
-
 #------------------------------------------------------------------
 #--sparse matrix operations layer----------------------------------
 #------------------------------------------------------------------
 
-#------------------------------------------------------------------
-"""
-def csrMaxFilter(CSRm):
-    # can be done in parallel (by rows)
-    nrows = csrGetNumberOfRows(CSRm)
-    maxs = [max(CSRm[k].data) for k in range(nrows) if CSRm[k].data != []]
-    coo = CSRm.tocoo()
-    triples = [[row,col,1] for row,col,val in zip(coo.row,coo.col,coo.data)
-               if maxs[row]==val]
-    CSRm = csrCreateFromCoo(triples)
-    return CSRm
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrMaxFilter"
-    CSRm = csrMaxFilter(matrixProduct(csrFV, csrTranspose(csrEV)).T).T
-    print "\ncsrMaxFilter(csrFE) =\n", csrToMatrixRepresentation(CSRm)
-"""
-
-'''
-def csrBoundaryFilter(CSRm, facetLengths):
-    maxs = [max(CSRm[k].data) for k in range(CSRm.shape[0])]
-    inputShape = CSRm.shape
-    coo = CSRm.tocoo()
-    for k in range(len(coo.data)):
-        if coo.data[k]==maxs[coo.row[k]]: coo.data[k] = 1
-        else: coo.data[k] = 0
-    mtx = coo_matrix((coo.data, (coo.row, coo.col)), shape=inputShape)
-    out = mtx.tocsr()
-    return out
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrBoundaryFilter"
-    CSRm = csrBoundaryFilter(matrixProduct(csrFV, csrTranspose(csrEV)).T).T
-    print "\ncsrMaxFilter(csrFE) =\n", csrToMatrixRepresentation(CSRm)
-'''
-#------------------------------------------------------------------
-"""
-def csrBoundaryFilter(CSRm, facetLengths):
-    coo = CSRm.tocoo()
-    maxs = [max(CSRm[k]) for k in range(CSRm.shape[0])]
-    triples = [[row,col,1] for row,col,val in zip(coo.row,coo.col,coo.data)
-               if val==maxs[row]]
-    CSRm = csrCreateFromCoo(triples)
-    return CSRm
-
-#------------------------------------------------------------------
-"""
 def csrBoundaryFilter(CSRm, facetLengths):
     
     maxs = [max(CSRm[k].data) for k in range(CSRm.shape[0])]
@@ -447,40 +295,7 @@ def csrBoundaryFilter(CSRm, facetLengths):
 
     out = mtx.tocsr()
     return out
-"""
-if __name__ == "__main__" and False:
-    print "\n>>> csrBoundaryFilter"
-    CSRm = csrBoundaryFilter(matrixProduct(csrFV, csrTranspose(csrEV)).T).T
-    print "\ncsrMaxFilter(csrFE) =\n", csrToMatrixRepresentation(CSRm)
-"""
-"""
-def csrBoundaryFilter(CSRm, facetLengths):
-    maxs = [max(CSRm[k].data) for k in range(CSRm.shape[0])]
-    inputShape = CSRm.shape
-    coo = CSRm.tocoo()
-    for k in range(len(coo.data)):
-        if coo.data[k]==maxs[coo.row[k]]: coo.data[k] = 1
-        else: coo.data[k] = 0
-    mtx = coo_matrix((coo.data, (coo.row, coo.col)), shape=inputShape)
-    out = mtx.todia().tocsr()
-    return out
-"""
-#------------------------------------------------------------------
-"""
-def csrBinFilter(CSRm):
-    # can be done in parallel (by rows)
-    coo = CSRm.tocoo()
-    triples = [[row,col,1] for row,col,val in zip(coo.row,coo.col,coo.data)
-               if val % 2 == 1]
-    if triples == []:
-        try:
-            raise KeyboardInterrupt
-        finally:
-            print('maybe Boundary of boundary is zero?')
-    i, j, data = TRANS(triples)
-    CSRm = scipy.sparse.coo_matrix((data,(i,j)),CSRm.shape).tocsr()
-    return CSRm
-"""
+
 #------------------------------------------------------------------
 def csrBinFilter(CSRm):
     # can be done in parallel (by rows)
@@ -494,11 +309,6 @@ def csrBinFilter(CSRm):
     #return out
     return coo.tocsr()
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrBinFilter"
-    CSRm = csrBinFilter(matrixProduct(csrFV, csrTranspose(csrEV)).T).T
-    print "\nccsrBinFilter(csrFE) =\n", csrToMatrixRepresentation(CSRm)
-
 #------------------------------------------------------------------
 def csrPredFilter(CSRm, pred):
     # can be done in parallel (by rows)
@@ -509,12 +319,6 @@ def csrPredFilter(CSRm, pred):
     CSRm = scipy.sparse.coo_matrix((data,(i,j)),CSRm.shape).tocsr()
     return CSRm
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrPredFilter"
-    CSRm = csrPredFilter(matrixProduct(csrFV, csrTranspose(csrEV)).T, GE(2)).T
-    print "\nccsrPredFilter(csrFE) =\n", csrToMatrixRepresentation(CSRm)
-
-
 #------------------------------------------------------------------
 #--topology interface layer----------------------------------------
 #------------------------------------------------------------------
@@ -524,23 +328,11 @@ def csrCreateTotalChain(kn):
     csrMat = csrCreateFromCoo(cooCreateFromBrc(TRANS([kn*[0]])))
     return csrMat
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrCreateTotalChain"
-    csrMat = csrCreateTotalChain(csrGetNumberOfRows(csrFV))
-    print "\ncsrCreateTotalChain(csrGetNumberOfRows(csrFV)) =\n", \
-        csrToMatrixRepresentation(csrMat)
-
 #------------------------------------------------------------------
 def csrCreateUnitChain(kn,k):
     CSRout = lil_matrix((kn, 1))
     CSRout[k,0] = 1
     return CSRout.tocsr()
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrCreateUnitChain"
-    CSRm = csrCreateUnitChain(4,2)
-    print "\ncsrCreateUnitChain(csrFV,2) =\n", \
-        csrToMatrixRepresentation(CSRm)
 
 #------------------------------------------------------------------
 def csrExtractAllGenerators(CSRm):
@@ -548,27 +340,11 @@ def csrExtractAllGenerators(CSRm):
                             for k in range(CSRm.shape[1])]
     return listOfListOfNumerals
 
-if __name__ == "__main__" and False:
-    print "\n>>> csrExtractAllGenerators"
-    facetLengths = [csrCell.getnnz() for csrCell in csrEV]
-    boundary_2_Op = csrBoundaryFilter(matrixProduct(csrEV, csrTranspose(csrFV)),
-                                 facetLengths)
-    listOfListOfNumerals = csrExtractAllGenerators(boundary_2_Op)
-    print "\ncsrExtractAllGenerators(boundary_2_Op) =\n", \
-        listOfListOfNumerals
-
 #------------------------------------------------------------------
 def csrChainToCellList(CSRm):
     coo = CSRm.tocoo()
     ListOfInt = [theRow for k,theRow in enumerate(coo.row) if coo.data[k]==1]
     return ListOfInt
-
-if __name__ == "__main__" and False:
-    print "\n>>> csrChainToCellList"
-    total_2_chain = csrCreateTotalChain(csrGetNumberOfRows(csrFV))
-    print "\ntotal_2_chain =\n", csrChainToCellList(total_2_chain)
-    total_1_chain = csrCreateTotalChain(csrGetNumberOfRows(csrEV))
-    print "\ntotal_1_chain =\n", csrChainToCellList(total_1_chain)
 
 #------------------------------------------------------------------
 #--topology query layer--------------------------------------------
@@ -579,23 +355,9 @@ def larCellAdjacencies(CSRm):
     CSRm = matrixProduct(CSRm,csrTranspose(CSRm))
     return CSRm
 
-if __name__ == "__main__" and False:
-    print "\n>>> larCellAdjacencies"
-    adj_2_cells = larCellAdjacencies(csrFV)
-    print "\nadj_2_cells =\n", csrToMatrixRepresentation(adj_2_cells)
-    adj_1_cells = larCellAdjacencies(csrEV)
-    print "\nadj_1_cells =\n", csrToMatrixRepresentation(adj_1_cells)
-
-
 #------------------------------------------------------------------
 def larCellIncidences(CSRm1,CSRm2):
     return matrixProduct(CSRm1, csrTranspose(CSRm2))
-
-if __name__ == "__main__" and False:
-    print "\n>>> larCellIncidences"
-    print "\nlarCellIncidences =\n", csrToMatrixRepresentation(
-                                                               larCellIncidences(csrFV,csrEV))
-
 
 #------------------------------------------------------------------
 # FV = d-chain;  EV = (d-1)-chain
@@ -609,25 +371,9 @@ def larBoundary(EV,FV):
     csrEV = csrCreate(EV)#,shape=(e,v))
     facetLengths = [csrCell.getnnz() for csrCell in csrEV]
     temp = larCellIncidences(csrEV,csrFV)
-    print "csrBoundary start\n"
     csrBoundary_2 = csrBoundaryFilter(temp,facetLengths)
     return csrBoundary_2
 
-if __name__ == "__main__" and False:
-    print "\n>>> larBoundary"
-    csrBoundary_2 = larBoundary(EV,FV)
-    print "\ncsrBoundary.T =\n", csrToMatrixRepresentation(csrBoundary_2.T)
-    print "\ncsrBoundary_2.T =\n", csrToBrc(csrBoundary_2.T)
-    print "\ncsrcoBoundary_1.T =\n", csrToBrc(csrBoundary_2)
-
-#------------------------------------------------------------------
-"""
-def larBoundaryChain(csrBoundaryMat,brcCellList):
-    n = csrGetNumberOfColumns(csrBoundaryMat)
-    csrChain = sum([csrCreateUnitChain(n,k) for k in brcCellList])
-    csrmat = matrixProduct(csrBoundaryMat,csrChain)
-    return csrBinFilter(csrmat)
-"""
 #------------------------------------------------------------------
 def larBoundaryChain(csrBoundaryMat,brcCellList):
     n,m = csrBoundaryMat.shape
@@ -639,34 +385,11 @@ def larBoundaryChain(csrBoundaryMat,brcCellList):
     out = csrBinFilter(csrmat)
     return out
 
-if __name__ == "__main__" and False:  # BUG TO SOLVE
-    print "\n>>> larBoundaryChain"
-    csrBoundary_2 = larBoundary(EV,FV)
-    chain_1 = larBoundaryChain(csrBoundary_2,[0,2])
-    print "\nlarBoundaryChain =\n", csrChainToCellList(chain_1)
-    chain_1 = larBoundaryChain(csrBoundary_2,[0])
-    print "\nlarBoundaryChain =\n", csrChainToCellList(chain_1)
-    chain_1 = larBoundaryChain(csrBoundary_2,
-                               range(csrGetNumberOfColumns(csrBoundary_2)))
-    print "\nlarBoundaryChain =\n", csrChainToCellList(chain_1)
-
 #------------------------------------------------------------------
 def larCoboundaryChain(csrCoBoundaryMat,brcCellList):
     m = csrGetNumberOfColumns(csrCoBoundaryMat)
     csrChain = sum([csrCreateUnitChain(m,k) for k in brcCellList])
-    print "\nchain =", csrToMatrixRepresentation(csrChain)
     return csrBinFilter(matrixProduct(csrCoBoundaryMat,csrChain))
-
-if __name__ == "__main__" and False:
-    print "\n>>> larCoboundaryChain"
-    csrCoBoundary_1 = larBoundary(FV,EV).T
-    chain_2 = larCoboundaryChain(csrCoBoundary_1,[0,2])
-    print "\nlarCoBoundaryChain =\n", csrChainToCellList(chain_2)
-    chain_2 = larCoboundaryChain(csrCoBoundary_1,[0])
-    print "\nlarCoBoundaryChain =\n", csrChainToCellList(chain_2)
-    chain_2 = larCoboundaryChain(csrCoBoundary_1,
-                                 range(csrGetNumberOfColumns(csrCoBoundary_1)))
-    print "\nlarCoBoundaryChain =\n", csrChainToCellList(chain_2)
 
 #------------------------------------------------------------------
 #--model geometry layer--------------------------------------------
@@ -692,32 +415,6 @@ def larProduct(models):
 
     model = AA(list)(verts.keys()), sorted(cells)
     return model
-
-if __name__ == "__main__" and False:
-    geom_0,topol_0 = [[0.],[1.],[2.],[3.],[4.]],[[0,1],[1,2],[3,4]]
-    geom_1,topol_1 = [[0.],[1.],[2.]], [[0,1],[1,2]]
-    mod_0 = (geom_0,topol_0)
-    mod_1 = (geom_1,topol_1)
-    
-    squares = larProduct([mod_0,mod_1])
-    VIEW(EXPLODE(1.2,1.2,1.2)(MKPOLS(squares)))
-    
-    cubes = INSL(larProduct)([mod_0,mod_1,mod_0]) # ==
-    cubes = larProduct([squares,mod_0])
-    VIEW(EXPLODE(1.2,1.2,1.2)(MKPOLS(cubes)))
-        
-    
-    line = [[0.],[1.]], [[0,1]]
-    cube = INSL(larProduct)([line,line,line])
-    geometry, topology = cube
-    VIEW(MKPOL([geometry, LAR2PLASM(topology), None]))
-    
-    geom_2 = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]
-    topol_2 = [[0, 1, 3], [1, 2, 4], [1, 3, 4], [2, 4, 5]]
-    segments = mod_1
-    triangles = (geom_2,topol_2)
-    wedges = larProduct([triangles,segments])
-    VIEW(EXPLODE(1.2,1.2,1.2)(MKPOLS(wedges)))
 
 #------------------------------------------------------------------
 # extrusion of simplicial complexes
@@ -760,31 +457,6 @@ def EXTRUDE(args):
     verts = AA(list)(scipy.array(V) / AA(float)(args))
     return [verts, AA(AA(lambda h:h+1))(cells)]
 
-
-if __name__ == "__main__" and False:
-    V = [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2]]
-    FV = [[0,1,3],[1,2,4],[2,4,5],[3,4,6],[4,6,7],[5,7,8]]
-    model = larExtrude((V,FV),2*[1,2,-3])
-    VIEW(EXPLODE(1,1,1.2)(MKPOLS(model)))
-    
-    V0 = [[]]
-    CV0 = [[0]]
-    model = larExtrude((V0,CV0),6*[1])
-    VIEW(EXPLODE(1.5,1.5,1.5)(MKPOLS(model)))
-    model = larExtrude(model,6*[1])
-    VIEW(EXPLODE(1.5,1.5,1.5)(MKPOLS(model)))
-    model = larExtrude(model,6*[1])
-    VIEW(EXPLODE(1.5,1.5,1.5)(MKPOLS(model)))
-
-    V0 = [[]]
-    CV0 = [[0]]
-    model = larExtrude((V0,CV0),2*[1])
-    VIEW(EXPLODE(1.5,1.5,1.5)(MKPOLS(model)))
-    model = larExtrude(model,2*[1])
-    VIEW(EXPLODE(1.5,1.5,1.5)(MKPOLS(model)))
-
-
-
 #------------------------------------------------------------------
 # extraction of facets of a cell complex
 
@@ -815,20 +487,6 @@ def larFacets(model,dim=3):
     # sort and remove duplicates
     cellFacets = sorted(AA(list)(set(AA(tuple)(cellFacets))))
     return V,cellFacets
-
-if __name__ == "__main__" and False:
-    V = [[0.,0.],[3.,0.],[0.,3.],[3.,3.],[1.,2.],[2.,2.],
-         [1.,1.],[2.,1.]]
-    FV = [[0,1,6,7],[0,2,4,6],[4,5,6,7],[1,3,5,7],[2,3,4,5],
-          [0,1,2,3]]
-    _,EV = larFacets((V,FV),dim=2)
-    print "\nEV =",EV
-
-    FV = [[0,1,3],[1,2,4],[2,4,5],[3,4,6],[4,6,7],[5,7,8], # full
-          [1,3,4],[4,5,7], # empty
-          [0,1,2],[6,7,8],[0,3,6],[2,5,8]] # exterior
-    _,EV = larFacets((V,FV),dim=2)
-    print "\nEV =",EV
 
 #------------------------------------------------------------------
 # extraction of skeletons of a (grid) cell complex
@@ -879,7 +537,7 @@ def outerVertexTest (bounds):
 
 #-------------------------------------------------------------------
 # 2D image toolbox
-
+'''
 def crossGrow(image,cross):
     xm,x,xM,ym,y,yM = cross
     pointValue = image[x,y]
@@ -908,10 +566,10 @@ def ybar(image,span,yspan):
 def delta(p,q): # area of rectangle (q,p)
     vect = AA(abs)(VECTDIFF([p,q]))
     return vect[0] * vect[1]
-
+'''
 #-------------------------------------------------------------------
 # 2D images to lar model
-
+'''
 def write2DBlock(cooStore):
     def write2DBlock0(block):
         x0,y0,dx,dy = block
@@ -1016,7 +674,7 @@ if __name__=="__main__":
  [0,12,0],
  [9,12,0],
  [13,12,0]]
-
+'''
 #-------------------------------------------------------------------
 # 3D images to lar model
 
@@ -1025,7 +683,7 @@ if __name__=="__main__":
 # the trick to use:  store[x,y,z] => store[z][x,y] ... :o)
 # such a translation may be even encapsulated in a wrapping interface
 
-
+'''
 def write3DBlock(store):
     def write3DBlock0(block):
         x,y,z,dx,dy,dz = block
@@ -1128,12 +786,12 @@ if __name__=="__main__":
     boundary_faces = csrChainToCellList(chain_2)
     faces = [F2V[f] for f in boundary_faces]
     VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,faces)) ))
-
+'''
 
 #------------------------------------------------------------------
 #--application layer (demo)----------------------------------------
 #------------------------------------------------------------------
-
+'''
 if __name__ == "__main__" and False:
     
     # input of topology and geometry
@@ -1272,3 +930,4 @@ if __name__ == "__main__" and False:
     VIEW(EXPLODE(1.1,1.1,1.5)(solid3D))
     boundary3D = boundary2D + floors2D
     VIEW(EXPLODE(1.1,1.1,1.5)(boundary3D))
+'''

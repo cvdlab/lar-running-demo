@@ -10,10 +10,12 @@ def visualizeData(fileInput="output_big.obj"):
 	glcanvas.runLoop()
 
 def main(argv):
+	ARGS_STRING = 'Args: -i <inputfile>'
+
 	try:
 		opts, args = getopt.getopt(argv,"i:")
 	except getopt.GetoptError:
-		print 'bin2opj.py -i <inputfile>'
+		print ARGS_STRING
 		sys.exit(2)
 	
 	mandatory = 1
@@ -27,6 +29,7 @@ def main(argv):
 			
 	if mandatory != 0:
 		print 'Not all arguments where given'
+		print ARGS_STRING
 		sys.exit(2)
 		
 	visualizeData(FILE_IN)

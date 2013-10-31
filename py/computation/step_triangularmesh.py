@@ -44,17 +44,6 @@ def timer_stop():
 
 # ------------------------------------------------------------
 
-def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
-
-def invertIndex(nx,ny,nz):
-	nx,ny,nz = nx+1,ny+1,nz+1
-	def invertIndex0(offset):
-		a0, b0 = offset / nx, offset % nx
-		a1, b1 = a0 / ny, a0 % ny
-		a2, b2 = a1 / nz, a1 % nz
-		return b0,b1,b2
-	return invertIndex0
-
 # ------------------------------------------------------------
 
 # inputFile = output.bin
@@ -139,10 +128,12 @@ def readFile(V,FV,chunksize,inputFile="output.bin",outputVtx="outputVtx.obj",out
 					print "EOF or error"
 
 def main(argv):
+	ARGS_STRING = 'Args: -x <borderX> -y <borderY> -z <borderZ> -i <inputfile> -f <outputfacefile> -v <outputverticesfile>'
+	
 	try:
 		opts, args = getopt.getopt(argv,"i:f:v:x:y:z:")
 	except getopt.GetoptError:
-		print 'bin2opj.py -x <borderX> -y <borderY> -z <borderZ> -i <inputfile> -f <outputfacefile> -v <outputverticesfile>'
+		print ARGS_STRING
 		sys.exit(2)
 	
 	nx = ny = nz = 64
@@ -172,8 +163,20 @@ def main(argv):
 			
 	if mandatory != 0:
 		print 'Not all arguments where given'
+		print ARGS_STRING
 		sys.exit(2)
 		
+	def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
+
+	def invertIndex(nx,ny,nz):
+		nx,ny,nz = nx+1,ny+1,nz+1
+		def invertIndex0(offset):
+			a0, b0 = offset / nx, offset % nx
+			a1, b1 = a0 / ny, a0 % ny
+			a2, b2 = a1 / nz, a1 % nz
+			return b0,b1,b2
+		return invertIndex0
+	
 	chunksize = nx * ny + nx * nz + ny * nz + 3 * nx * ny * nz
 	V = [[x,y,z] for z in range(nz+1) for y in range(ny+1) for x in range(nx+1) ]
 	
