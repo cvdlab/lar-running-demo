@@ -31,5 +31,5 @@ if [ -z "$DCM2PNM" ]; then
     echo "Cannot find a valid dcm2pnm installation"
 	exit 1
 fi
-cd ,
+
 exit 0
