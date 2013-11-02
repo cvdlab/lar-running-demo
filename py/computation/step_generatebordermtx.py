@@ -164,7 +164,12 @@ def main(argv):
 	log(3, ["FV = " + str(FV)]);
 	
 	fileName = DIR_OUT+'/bordo3_'+str(nx)+'-'+str(ny)+'-'+str(nz)+'.json'
-	computeBordo3(FV,CV,fileName)
+	
+	try:
+		computeBordo3(FV,CV,fileName)
+	except:
+		print "Unexpected error:", sys.exc_info()[0]
+		sys.exit(2)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

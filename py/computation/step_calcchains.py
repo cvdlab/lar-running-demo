@@ -62,7 +62,7 @@ def countFilesInADir(directory):
 	
 # ------------------------------------------------------------
 
-def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O):
+def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O):
 	beginImageStack = 0
 	endImage = beginImageStack
 	MAX_CHAINS = colors
@@ -72,9 +72,9 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 	LISTA_VETTORI2 = {}
 	LISTA_OFFSET = {}
 	
-	print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
-	print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
-	print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
+	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
+	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
+	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
 	
 	for zBlock in range(imageDepth/imageDz):
 		startImage = endImage
@@ -84,7 +84,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 	
 		theColors = theColors.reshape(1,2) # colors??
 		
-		print 'Z now:' + str(zBlock)
+		# print 'Z now:' + str(zBlock)
 		
 		background = max(theColors[0])
 		foreground = min(theColors[0])
@@ -130,11 +130,13 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 							for z in range(nz):
 								for currCol in theColors[0]:
 									if (image[z,x,y] == currCol):
-										tmpChain = chains3D[str(currCol)]
-										tmpChain[addr(x,y,z)] = 1
-										chains3D.update({str(currCol): tmpChain})
+										# tmpChain = chains3D[str(currCol)]
+										# tmpChain[addr(x,y,z)] = 1
+										# chains3D.update({str(currCol): tmpChain})
 										##
-										chains3D_old.update({str(currCol): chains3D_old[str(currCol)].append(addr(x,y,z))})
+										tmpChain = chains3D_old[str(currCol)]
+										tmpChain.append(addr(x,y,z))
+										chains3D_old.update({str(currCol): tmpChain})
 				else:
 					for x in range(nx):
 						for y in range(ny):
@@ -160,7 +162,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 				# objectBoundaryChain_correct = scipy.sparse.csr_matrix((temp.reshape((l,1))))
 				# tempo_larboundary = tempo_larboundary + tm.time() - timer_last;
 				# print "Tempo larBoundaryChain() =", tempo_larboundary
-				print 'Update results for: ' + str(xBlock) + '-' + str(yBlock)
+				# print 'Update results for: ' + str(xBlock) + '-' + str(yBlock)
 				for currCol in theColors[0]:
 					if ((xBlock == 0) and (yBlock == 0) and (zBlock == 0)):
 						LISTA_OFFSET.update( {str(currCol): np.array([[zStart,xStart,yStart]], dtype=int32)} )
@@ -188,27 +190,32 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
 	bordo3 = None
 	
-	with open(BORDER_FILE, "r") as file:
-		bordo3_json = json.load(file)
-		ROWCOUNT = bordo3_json['ROWCOUNT']
-		COLCOUNT = bordo3_json['COLCOUNT']
-		ROW = np.asarray(bordo3_json['ROW'], dtype=np.int32)
-		COL = np.asarray(bordo3_json['COL'], dtype=np.int32)
-		DATA = np.asarray(bordo3_json['DATA'], dtype=np.int8)
-		bordo3 = csr_matrix((DATA,COL,ROW),shape=(ROWCOUNT,COLCOUNT));
+	if (calculateout == True):
+		with open(BORDER_FILE, "r") as file:
+			bordo3_json = json.load(file)
+			ROWCOUNT = bordo3_json['ROWCOUNT']
+			COLCOUNT = bordo3_json['COLCOUNT']
+			ROW = np.asarray(bordo3_json['ROW'], dtype=np.int32)
+			COL = np.asarray(bordo3_json['COL'], dtype=np.int32)
+			DATA = np.asarray(bordo3_json['DATA'], dtype=np.int8)
+			bordo3 = csr_matrix((DATA,COL,ROW),shape=(ROWCOUNT,COLCOUNT));
 
 	imageHeight,imageWidth = getImageData(INPUT_DIR+str(BEST_IMAGE)+".png")
 	imageDepth = countFilesInADir(INPUT_DIR)
 	
 	Nx,Ny,Nz = imageHeight/imageDx, imageWidth/imageDx, imageDepth/imageDz
-	pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
-	computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O)
+	try:
+		pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
+		computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O)
+	except:
+		print "Unexpected error:", sys.exc_info()[0]
+		sys.exit(2)
 	
 def main(argv):
 	ARGS_STRING = 'Args: -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputdir> -q <bestimage>'
 
 	try:
-		opts, args = getopt.getopt(argv,"rb:x:y:z:i::c:o:q:")
+		opts, args = getopt.getopt(argv,"rb:x:y:z:i:c:o:q:")
 	except getopt.GetoptError:
 		print ARGS_STRING
 		sys.exit(2)

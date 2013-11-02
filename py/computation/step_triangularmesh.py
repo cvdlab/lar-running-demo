@@ -50,7 +50,11 @@ def timer_stop():
 # outputVtx = outputVtx.obj
 # outputFaces = outputFaces.obj
 
-def readFile(V,FV,chunksize,inputFile="output.bin",outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
+def readFile(V,FV,chunksize,inputFile="output.bin",OUT_DIR): #outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
+	outputId = os.path.basename(inputFile).split('.')[0].split('-')[1]
+	outputVtx=OUT_DIR+"/output-a-Vtx-"+outputId+".stl"
+	outputFaces=OUT_DIR+"/output-b-Faces-"+outputId+".stl"
+
 	with open(inputFile, "rb") as file:
 		with open(outputVtx, "w") as fileVertex:
 			with open(outputVtx, "w") as fileFaces:
@@ -128,10 +132,10 @@ def readFile(V,FV,chunksize,inputFile="output.bin",outputVtx="outputVtx.obj",out
 					print "EOF or error"
 
 def main(argv):
-	ARGS_STRING = 'Args: -x <borderX> -y <borderY> -z <borderZ> -i <inputfile> -f <outputfacefile> -v <outputverticesfile>'
+	ARGS_STRING = 'Args: -x <borderX> -y <borderY> -z <borderZ> -i <inputfile> -o <outdir>'
 	
 	try:
-		opts, args = getopt.getopt(argv,"i:f:v:x:y:z:")
+		opts, args = getopt.getopt(argv,"i:o:x:y:z:")
 	except getopt.GetoptError:
 		print ARGS_STRING
 		sys.exit(2)
@@ -140,8 +144,7 @@ def main(argv):
 	mandatory = 4
 	#Files
 	FILE_IN = ''
-	FILE_VO = ''
-	FILE_FO = ''	
+	OUT_DIR = ''
 	
 	for opt, arg in opts:
 		if opt == '-x':
@@ -154,12 +157,9 @@ def main(argv):
 		elif opt == '-i':
 			FILE_IN= arg
 			mandatory = mandatory - 1
-		elif opt == '-v':
-			FILE_VO = arg
+		elif opt == '-o':
+			OUT_DIR = arg
 			mandatory = mandatory - 1
-		elif opt == '-f':
-			mandatory = mandatory - 1
-			FILE_FO = arg
 			
 	if mandatory != 0:
 		print 'Not all arguments where given'
@@ -188,7 +188,11 @@ def main(argv):
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])
 		if (y < ny) and (z < nz): FV.append([h,ind(x,y+1,z),ind(x,y,z+1),ind(x,y+1,z+1)])
 
-	readFile(V,FV,chunksize,FILE_IN,FILE_VO,FILE_FO)
-			
+	try:
+		readFile(V,FV,chunksize,FILE_IN,OUT_DIR)
+	except:
+		print "Unexpected error:", sys.exc_info()[0]
+		sys.exit(2)
+		
 if __name__ == "__main__":
    main(sys.argv[1:])

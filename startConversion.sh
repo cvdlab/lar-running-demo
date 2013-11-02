@@ -5,6 +5,7 @@ TMPNAME="tmp"
 IMGDIRNAME="img"
 BORDERDIRNAME="border"
 COMPDIR="comp"
+COMPDIRBIN="compbin"
 STLDIR="stl"
 
 show_help() {
@@ -244,14 +245,51 @@ echo ""
 COMPUTATION_DIR=$TMPDIRECTORY/$COMPDIR
 mkdir -p $COMPUTATION_DIR &> /dev/null
 
-#if [ $OPENCL -eq 1 ]; then
-#	python ./py/computation/step_calcchains.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
-	# Call OpenCL JAR	
-#else
-#	python ./py/computation/step_calcchains.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
-	#Convert output-*.json to .bin	
-#fi
+COMPUTATION_DIR_BIN=$TMPDIRECTORY/$COMPDIRBIN
+mkdir -p $COMPUTATION_DIR_BIN &> /dev/null
 
-# stl conversion
+if [ $OPENCL -eq 1 ]; then
+	python ./py/computation/step_calcchains.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
+	if [ $? -ne 0 ]; then
+		echo "Error while computing chains"
+		exit 1
+	fi	
+	# Call OpenCL JAR
+	# here use updated jar that outputs directly in binary
+else
+	python ./py/computation/step_calcchains.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
+	if [ $? -ne 0 ]; then
+		echo "Error while computing output chains"
+		exit 1
+	fi
+	#Convert output-*.json to .bin
+	for genOut in $(ls $COMPUTATION_DIR/output); do
+		python ./py/computation/step_convoutput.py -i $COMPUTATION_DIR/$genOut -o $COMPUTATION_DIR_BIN &> /dev/null
+		if [ $? -ne 0 ]; then
+			echo "Error while converting output to binary: $genOut"
+			exit 1
+		fi
+	done
+fi
 
-# merge files
+# stl conversion and merge
+STL_DIR=$TMPDIRECTORY/$STLDIR
+mkdir -p $STL_DIR &> /dev/null
+COUNTFILE=1
+for binOut in $(ls $COMPUTATION_DIR/output); do
+	python ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_y -z $BORDER_Z -i $binOut -o $STL_DIR &> /dev/null
+	if [ $? -ne 0 ]; then
+		echo "Error while converting output to binary: $genOut"
+		exit 1
+	fi
+	
+	STL_OUT_FILE=$STL_DIR/model-$COUNTFILE.obj
+	touch $STL_OUT_FILE
+	for stlFile in $(ls $STL_DIR/*.stl); do
+		cat $STL_DIR/$stlFile >> $STL_OUT_FILE
+		rm $STL_DIR/$stlFile
+	done
+	
+	COUNTFILE=$((COUNTFILE + 1))
+	
+done
