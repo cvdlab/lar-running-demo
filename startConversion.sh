@@ -1,5 +1,11 @@
 #!/bin/bash
 MYSELF=`basename $0`
+WORKINDIR=$(pwd)
+TMPNAME="tmp"
+IMGDIRNAME="img"
+BORDERDIRNAME="border"
+COMPDIR="comp"
+STLDIR="stl"
 
 show_help() {
 	echo "Either run without args or with"
@@ -98,10 +104,8 @@ if [ -z "$RUNSCRIPT" ] || [ "$RUNSCRIPT" != "y" ]; then
 	exit 1
 fi
 
-WORKINDIR=$(pwd)
-
 # Generate tmp dir name
-TMPDIRECTORY=$WORKINDIR/tmp/$(date | md5sum | head -c${1:-32})
+TMPDIRECTORY=$WORKINDIR/$TMPNAME/$(date | md5sum | head -c${1:-32})
 echo "Using tmp directory $TMPDIRECTORY"
 
 # Create clean dir
@@ -113,8 +117,8 @@ if [ ! -d "$TMPDIRECTORY" ]; then
 	exit 1
 fi
 
-# Copy images to tmpdir
-TMPIMGDIRECTORY=$TMPDIRECTORY/img
+# Copy images to tmpimgdir
+TMPIMGDIRECTORY=$TMPDIRECTORY/$IMGDIRNAME
 mkdir -p $TMPIMGDIRECTORY &> /dev/null
 
 if [ ! -d "$TMPIMGDIRECTORY" ]; then
@@ -124,10 +128,10 @@ fi
 
 cp $DIRINPUT/* $TMPIMGDIRECTORY &> /dev/null
 
-# Conversion script
+# Convert image copied in $TMPIMGDIRECTORY
 FIRSTFILE=$(ls $TMPIMGDIRECTORY | sort -n | head -1)
 EXTFILE="${FIRSTFILE##*.}"
-COUNTFILE=1
+COUNTFILE=0
 BESTFILE=$STARTFILE
 
 echo -n "Converting input images..."
@@ -159,40 +163,52 @@ else
 	exit 1
 fi
 
-BESTFILE=$BESTFILE.png
+# Extract new bestfile name
+BESTFILENAME=$BESTFILE.png
 echo -n " done. Best image is now: $BESTFILE"
 echo ""
 
-BESTIMAGE_WIDTH=$(identify -format '%w' $TMPIMGDIRECTORY/$BESTFILE)
-BESTIMAGE_HEIGHT=$(identify -format '%h' $TMPIMGDIRECTORY/$BESTFILE)
+# Image stats
+BESTIMAGE_WIDTH=$(identify -format '%w' $TMPIMGDIRECTORY/$BESTFILENAME)
+BESTIMAGE_HEIGHT=$(identify -format '%h' $TMPIMGDIRECTORY/$BESTFILENAME)
 TOTALCOUNT=$(ls -1 $TMPIMGDIRECTORY | wc -l)
 
 echo "Image sizes are $BESTIMAGE_WIDTH*$BESTIMAGE_HEIGHT*$TOTALCOUNT"
+# Dealing with odd numbers is gruesome, they might even be prime
 if [ $(( $TOTALCOUNT % 2 )) -ne 0 ]; then
 	echo "Images are odd, adding one"
 	convert -size $BESTIMAGE_WIDTH\x$BESTIMAGE_HEIGHT -colorspace gray xc:black $TMPIMGDIRECTORY/$COUNTFILE.png
 	TOTALCOUNT=$((TOTALCOUNT + 1))
 fi
 
-# ask for border operator dimensions
+# Guess a 2^x border dimension
 BORDER_X=$(./sh/pow2test.sh $BESTIMAGE_WIDTH)
 BORDER_Y=$(./sh/pow2test.sh $BESTIMAGE_HEIGHT)
 BORDER_Z=$(./sh/pow2test.sh $TOTALCOUNT)
+BORDER_ERR=0
 
+# Might be erroneus
 echo -n "Suggested border operator dim $BORDER_X x $BORDER_Y x $BORDER_Z "
 if [ "$BORDER_X" -eq "0" ] || [ "$BORDER_Y" -eq "0" ] || [ "$BORDER_Z" -eq "0" ]; then
 	echo -n "[might be erroneous]"
+	BORDER_ERR=1
 fi
 
+# If erroneous force to input a new one
 echo ""
-echo -n "Enter new border operator dim [X*Y*Z and ENTER] [ENTER to skip]: "
+if [ "$BORDER_ERR" -eq 1 ]; then
+	echo -n "Enter new border operator dim [X*Y*Z and ENTER]: "
+else
+	echo -n "Enter new border operator dim [X*Y*Z and ENTER] [ENTER to skip]: "
+fi
 read BORDERNEW
 
-if [ ! -z "$BORDERNEW" ]; then
+# parse new border if necessary
+if [ "$BORDER_ERR" -eq 1 ] || [ ! -z "$BORDERNEW" ]; then
 	BORDNEW_ARR=($(echo $BORDERNEW | tr "*" "\n"))
 	
 	if [ ${#BORDNEW_ARR[@]} -ne 3 ]; then
-		echo "Unknown format. Aborting"
+		echo "Error in border dimensions. Aborting"
 		exit 1
 	fi
 	
@@ -204,10 +220,37 @@ fi
 echo "Using border operator size $BORDER_X x $BORDER_Y x $BORDER_Z"
 
 # Check if border file exist already? where? (our dir), else call py step_bordercreate
+BORDER_DIR=$WORKINDIR/$TMPNAME/$BORDERDIRNAME
+BORDER_FILE="bordo3_$BORDER_X-$BORDER_Y-$BORDER_Z.json"
+mkdir -p $BORDER_DIR &> /dev/null
+
+if [ ! -r $BORDER_DIR/$BORDER_FILE ]; then
+	echo -n "Generating border matrix ... "
+	python ./py/computation/step_generatebordermtx.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -o $BORDER_DIR &> /dev/null
+	if [ $? -ne 0 ]; then
+		echo -n "Error while generating $BORDER_DIR/$BORDER_FILE. Exiting."
+		exit 1
+	else
+		echo -n "done!"
+	fi
+else
+	echo -n "Using precalculated matrix."
+fi
+echo ""
+
 
 # Call chain computer. if opencl is diabled, enable computation of output
+# -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputdir> -q <bestimage>
+COMPUTATION_DIR=$TMPDIRECTORY/$COMPDIR
+mkdir -p $COMPUTATION_DIR &> /dev/null
 
-# conversion to bin for py necessary!!!
+#if [ $OPENCL -eq 1 ]; then
+#	python ./py/computation/step_calcchains.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
+	# Call OpenCL JAR	
+#else
+#	python ./py/computation/step_calcchains.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
+	#Convert output-*.json to .bin	
+#fi
 
 # stl conversion
 

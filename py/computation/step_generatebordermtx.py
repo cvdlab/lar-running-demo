@@ -86,7 +86,7 @@ def computeBordo3(FV,CV,inputFile='bordo3.json'):
 		file.flush();
 
 def main(argv):
-	ARGS_STRING = 'Args: -x <borderX> -y <borderY> -z <borderZ> -o <outputfile>'
+	ARGS_STRING = 'Args: -x <borderX> -y <borderY> -z <borderZ> -o <outputdir>'
 
 	try:
 		opts, args = getopt.getopt(argv,"o:x:y:z:")
@@ -96,7 +96,7 @@ def main(argv):
 	
 	mandatory = 2
 	#Files
-	FILE_OUT = ''
+	DIR_OUT = ''
 	
 	for opt, arg in opts:
 		if opt == '-x':
@@ -107,7 +107,7 @@ def main(argv):
 		elif opt == '-z':
 			nz = int(arg)
 		elif opt == '-o':
-			FILE_OUT = arg
+			DIR_OUT = arg
 			mandatory = mandatory - 1
 			
 	if mandatory != 0:
@@ -163,8 +163,8 @@ def main(argv):
 
 	log(3, ["FV = " + str(FV)]);
 	
-	computeBordo3(FV,CV,FILE_OUT)
-			
+	fileName = DIR_OUT+'/bordo3_'+str(nx)+'-'+str(ny)+'-'+str(nz)+'.json'
+	computeBordo3(FV,CV,fileName)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

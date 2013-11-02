@@ -11,6 +11,7 @@ import png
 import matplotlib.pyplot as plt
 from scipy import ndimage
 import struct
+import os
 
 def getImageData(fileName):
 	def get_image_info(data):
@@ -26,8 +27,8 @@ def getImageData(fileName):
 	def is_png(data):
 		return (data[:8] == '\211PNG\r\n\032\n'and (data[12:16] == 'IHDR'))
 		
-	with open('foo.png', 'rb') as f:
-        data = f.read()
+	with open(fileName, 'rb') as f:
+		data = f.read()
 		
 	return get_image_info(data)
 
@@ -106,6 +107,13 @@ def pngstack2array3d(path, MIN_SLICE, MAX_SLICE, colors, pixel, centroids):
 		centers_idx = np.reshape(qnt,image3d[page].shape)
 		image3d[page] = centroids[centers_idx].reshape(image3d[page].shape)
 
+	# Show result
+	if False:
+		plt.imshow(image3d[0])
+		plt.show()
+		plt.imshow(image3d[len(image3d)-1])
+		plt.show()
+	
 	# return a scipy ndarray 
 	# -------------------------------------------------------------------------
 	return image3d,colors,centroids

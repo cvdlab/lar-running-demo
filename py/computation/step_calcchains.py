@@ -10,6 +10,8 @@ import gc
 from pngstack2array3d import *
 import struct
 import getopt, sys
+#
+import matplotlib.pyplot as plt
 
 # ------------------------------------------------------------
 # Logging & Timer 
@@ -56,11 +58,11 @@ PNG_EXTENSION = ".png"
 # ------------------------------------------------------------
 
 def countFilesInADir(directory):
-	return len([name for name in os.listdir(directory) if os.path.isfile(name)])
+	return len(os.walk(directory).next()[2])
 	
 # ------------------------------------------------------------
 
-def computeChains(imageHeight,imageWidth,imageDepth, Nx,Ny,Nz, calculateout, colors,pixelCalc,centroidsCalc, INPUT_DIR):
+def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O):
 	beginImageStack = 0
 	endImage = beginImageStack
 	MAX_CHAINS = colors
@@ -69,7 +71,11 @@ def computeChains(imageHeight,imageWidth,imageDepth, Nx,Ny,Nz, calculateout, col
 	LISTA_VETTORI = {}
 	LISTA_VETTORI2 = {}
 	LISTA_OFFSET = {}
-
+	
+	print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
+	print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
+	print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
+	
 	for zBlock in range(imageDepth/imageDz):
 		startImage = endImage
 		endImage = startImage + imageDz
@@ -77,6 +83,9 @@ def computeChains(imageHeight,imageWidth,imageDepth, Nx,Ny,Nz, calculateout, col
 		theImage,colors,theColors = pngstack2array3d(INPUT_DIR, startImage, endImage, colors, pixelCalc, centroidsCalc)
 	
 		theColors = theColors.reshape(1,2) # colors??
+		
+		print 'Z now:' + str(zBlock)
+		
 		background = max(theColors[0])
 		foreground = min(theColors[0])
 		
@@ -87,9 +96,18 @@ def computeChains(imageHeight,imageWidth,imageDepth, Nx,Ny,Nz, calculateout, col
 				xStart, yStart = xBlock * imageDx, yBlock * imageDy
 				xEnd, yEnd = xStart+imageDx, yStart+imageDy
 				
+				# print str(xStart) + '-' + str(xEnd)
+				# print str(yStart) + '-' + str(yEnd)
+				
 				image = theImage[:, xStart:xEnd, yStart:yEnd]
 				nz,nx,ny = image.shape
-
+				# print str(nx) + '-' + str(ny) + '-' + str(nz)
+				# print str(len(image[0])) + '-' + str(len(image[nz-1]))
+				# plt.imshow(image[0])
+				# plt.show()
+				# plt.imshow(image[nz-1])
+				# plt.show()
+				
 				count += 1
 
 				# Compute a quotient complex of chains with constant field
@@ -111,23 +129,22 @@ def computeChains(imageHeight,imageWidth,imageDepth, Nx,Ny,Nz, calculateout, col
 						for y in range(ny):
 							for z in range(nz):
 								for currCol in theColors[0]:
-									if (image[x,y,z] == currCol):
+									if (image[z,x,y] == currCol):
 										tmpChain = chains3D[str(currCol)]
 										tmpChain[addr(x,y,z)] = 1
 										chains3D.update({str(currCol): tmpChain})
 										##
 										chains3D_old.update({str(currCol): chains3D_old[str(currCol)].append(addr(x,y,z))})
-										break
 				else:
 					for x in range(nx):
 						for y in range(ny):
 							for z in range(nz):
 								for currCol in theColors[0]:
-									if (image[x,y,z] == currCol):
+									# print str(x) + '-' + str(y) + '-' + str(z) + '-' + str(currCol)
+									if (image[z,x,y] == currCol):
 										tmpChain = chains3D[str(currCol)]
 										tmpChain[addr(x,y,z)] = 1
 										chains3D.update({str(currCol): tmpChain})
-										break
 
 				# Compute the boundary complex of the quotient cell
 				# ------------------------------------------------------------
@@ -143,33 +160,35 @@ def computeChains(imageHeight,imageWidth,imageDepth, Nx,Ny,Nz, calculateout, col
 				# objectBoundaryChain_correct = scipy.sparse.csr_matrix((temp.reshape((l,1))))
 				# tempo_larboundary = tempo_larboundary + tm.time() - timer_last;
 				# print "Tempo larBoundaryChain() =", tempo_larboundary
-				
+				print 'Update results for: ' + str(xBlock) + '-' + str(yBlock)
 				for currCol in theColors[0]:
 					if ((xBlock == 0) and (yBlock == 0) and (zBlock == 0)):
-						LISTA_VETTORI.update( {str(currCol): np.array([chains3D[str(currCol)]], dtype=int32)} )
 						LISTA_OFFSET.update( {str(currCol): np.array([[zStart,xStart,yStart]], dtype=int32)} )
 						if (calculateout == True):
 							LISTA_VETTORI2.update( {str(currCol): np.array([objectBoundaryChain[str(currCol)].toarray().astype(int32).flatten()])} )
+						else:
+							LISTA_VETTORI.update( {str(currCol): np.array([chains3D[str(currCol)]], dtype=int32)} )
 					else:
-						LISTA_VETTORI.update( {str(currCol): np.append(LISTA_VETTORI[str(currCol)], [chains3D[str(currCol)]], axis=0)} )
 						LISTA_OFFSET.update( {str(currCol): np.append(LISTA_OFFSET[str(currCol)], np.array([[zStart,xStart,yStart]], dtype=int32), axis=0)} )
 						if (calculateout == True):
 							LISTA_VETTORI2.update( {str(currCol): np.append(LISTA_VETTORI2[str(currCol)], [objectBoundaryChain[str(currCol)].toarray().astype(int32).flatten()], axis=0)} )
+						else:
+							LISTA_VETTORI.update( {str(currCol): np.append(LISTA_VETTORI[str(currCol)], [chains3D[str(currCol)]], axis=0)} )
 							
-	for key in LISTA_VETTORI:
-		with open('selettori-'+key+'.json', "rb") as file:
-			json.dump({"lista_vettori":LISTA_VETTORI[key].tolist(), "lista_offset":LISTA_OFFSET[key].tolist()}, file, separators=(',',':'))
-			file.flush()
-			
+	for key in LISTA_OFFSET:
 		if (calculateout == True):
-			with open('output-'+key+'.json', "rb") as file:
+			with open(DIR_O+'/output-'+key+'.json', "w") as file:
 				json.dump({"lista_vettori":LISTA_VETTORI2[key].tolist(), "lista_offset":LISTA_OFFSET[key].tolist()}, file, separators=(',',':'))
 				file.flush()
+		else:
+			with open(DIR_O+'/selettori-'+key+'.json', "w") as file:
+				json.dump({"lista_vettori":LISTA_VETTORI[key].tolist(), "lista_offset":LISTA_OFFSET[key].tolist()}, file, separators=(',',':'))
+				file.flush()
 
-def prepareComputation(imageDx, imageDy, imageDz, colors, calculateout, V, FV, INPUT_DIR, BEST_IMAGE, BORDER_FILE):
+def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
 	bordo3 = None
 	
-	with open(inputFile, "rb") as file:
+	with open(BORDER_FILE, "r") as file:
 		bordo3_json = json.load(file)
 		ROWCOUNT = bordo3_json['ROWCOUNT']
 		COLCOUNT = bordo3_json['COLCOUNT']
@@ -178,17 +197,18 @@ def prepareComputation(imageDx, imageDy, imageDz, colors, calculateout, V, FV, I
 		DATA = np.asarray(bordo3_json['DATA'], dtype=np.int8)
 		bordo3 = csr_matrix((DATA,COL,ROW),shape=(ROWCOUNT,COLCOUNT));
 
-	imageHeight,imageWidth = getImageData(INPUT_DIR+BEST_IMAGE+".png")
+	imageHeight,imageWidth = getImageData(INPUT_DIR+str(BEST_IMAGE)+".png")
 	imageDepth = countFilesInADir(INPUT_DIR)
 	
 	Nx,Ny,Nz = imageHeight/imageDx, imageWidth/imageDx, imageDepth/imageDz
 	pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
+	computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O)
 	
 def main(argv):
-	ARGS_STRING = 'Args: -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputfiles> -q <bestimage>'
+	ARGS_STRING = 'Args: -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputdir> -q <bestimage>'
 
 	try:
-		opts, args = getopt.getopt(argv,"i:f:v:x:y:z:")
+		opts, args = getopt.getopt(argv,"rb:x:y:z:i::c:o:q:")
 	except getopt.GetoptError:
 		print ARGS_STRING
 		sys.exit(2)
@@ -199,10 +219,10 @@ def main(argv):
 	mandatory = 5
 	calculateout = False
 	#Files
-	FILE_IN = 'bordo3.json'
+	BORDER_FILE = 'bordo3.json'
 	BEST_IMAGE = ''
 	DIR_IN = ''
-	FILES_O = ''
+	DIR_O = ''
 	
 	for opt, arg in opts:
 		if opt == '-x':
@@ -213,21 +233,21 @@ def main(argv):
 		elif opt == '-z':
 			nz = imageDz = int(arg)
 		elif opt == '-r':
-			calculateout = True			
+			calculateout = True
 		elif opt == '-i':
-			DIR_IN = arg
+			DIR_IN = arg + '/'
 			mandatory = mandatory - 1
 		elif opt == '-b':
-			FILE_IN = arg
+			BORDER_FILE = arg
 			mandatory = mandatory - 1
 		elif opt == '-o':
 			mandatory = mandatory - 1
-			FILES_O = arg
+			DIR_O = arg
 		elif opt == '-c':
 			mandatory = mandatory - 1
 			colors = int(arg)
 		elif opt == '-q':
-			BEST_IMAGE = arg			
+			BEST_IMAGE = int(arg)
 			
 	if mandatory != 0:
 		print 'Not all arguments where given'
@@ -250,13 +270,14 @@ def main(argv):
 	
 	v2coords = invertIndex(nx,ny,nz)
 
+	FV = []
 	for h in range(len(V)):
 		x,y,z = v2coords(h)
 		if (x < nx) and (y < ny): FV.append([h,ind(x+1,y,z),ind(x,y+1,z),ind(x+1,y+1,z)])
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])
 		if (y < ny) and (z < nz): FV.append([h,ind(x,y+1,z),ind(x,y,z+1),ind(x,y+1,z+1)])
 
-	prepareComputation(imageDx, imageDy, imageDzV, colors, calculateout, V, FV, DIR_IN, BEST_IMAGE, BORDER_FILE)
+	runComputation(imageDx, imageDy, imageDz, colors, calculateout, V, FV, DIR_IN, BEST_IMAGE, BORDER_FILE, DIR_O)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
