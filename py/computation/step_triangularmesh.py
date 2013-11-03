@@ -22,27 +22,24 @@ logging_level = 0;
 # 3 = many many details
 
 def log(n, l):
-
-    if __name__=="__main__" and n <= logging_level:
-        for s in l:
-            print "Log:", s;
+	if __name__=="__main__" and n <= logging_level:
+		for s in l:
+			print "Log:", s;
 
 timer = 1;
 
 timer_last =  tm.time()
 
 def timer_start(s):
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer start:" + s]);
-    timer_last = tm.time();
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer start:" + s]);
+	timer_last = tm.time();
 
 def timer_stop():
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
 
@@ -138,7 +135,7 @@ def readFile(V,FV,chunksize,inputFile,OUT_DIR): #outputVtx="outputVtx.obj",outpu
 				except:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
 					lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-					log(1, [ "EOF or error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
+					log(1, [ "EOF or error: " + ''.join('!! ' + line for line in lines) ])
 
 def main(argv):
 	ARGS_STRING = 'Args: -x <borderX> -y <borderY> -z <borderZ> -i <inputfile> -o <outdir>'
@@ -198,11 +195,13 @@ def main(argv):
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])
 		if (y < ny) and (z < nz): FV.append([h,ind(x,y+1,z),ind(x,y,z+1),ind(x,y+1,z+1)])
 
-	#try:
-	readFile(V,FV,chunksize,FILE_IN,OUT_DIR)
-	#except:
-	#	print "Unexpected error:", sys.exc_info()[0]
-	#	sys.exit(2)
-		
+	try:
+		readFile(V,FV,chunksize,FILE_IN,OUT_DIR)
+	except:
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])
+		sys.exit(2)
+
 if __name__ == "__main__":
-   main(sys.argv[1:])
+	main(sys.argv[1:])

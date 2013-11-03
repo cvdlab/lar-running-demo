@@ -32,26 +32,42 @@ from scipy.spatial import Delaunay
 from scipy.linalg import *
 from pyplasm import *
 from matrixutil_no_accel import *
-from time import time
+import time as tm
 
+
+# ------------------------------------------------------------
+# Logging & Timer 
+# ------------------------------------------------------------
+
+logging_level = 0; 
+
+# 0 = no_logging
+# 1 = few details
+# 2 = many details
+# 3 = many many details
+
+def log(n, l):
+	if __name__=="__main__" and n <= logging_level:
+		for s in l:
+			print "Log:", s;
 
 timer = 1;
 
-timer_last =  time()
+timer_last =  tm.time()
 
 def timer_start(s):
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        print "Timer start:", s;
-    timer_last = time();
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer start:" + s]);
+	timer_last = tm.time();
 
 def timer_stop():
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        print "Timer stop :", time() - timer_last;
-#
+# ------------------------------------------------------------
+
 self_test=False
 
 #------------------------------------------------------------------
@@ -283,15 +299,16 @@ def csrBoundaryFilter(CSRm, facetLengths):
 
     row = [] # np.array([]).astype(np.int32);
     col = [] # np.array([]).astype(np.int32);
-    data = [] # np.array([]).astype(np.int32);
+    # data = [] # np.array([]).astype(np.int32);
 
     for k in range(len(coo.data)):      
         if coo.data[k] == maxs[coo.row[k]]:
             row.append(coo.row[k])
             col.append(coo.col[k])
-            data.append(1)
+            # data.append(1)
     
-    mtx = coo_matrix( (np.array(data).astype(np.int32), ( np.array(row).astype(np.int32), np.array(col).astype(np.int32) )), shape=inputShape)
+    data = np.ones(len(col),dtype=np.int32);
+    mtx = coo_matrix( (data, ( np.array(row).astype(np.int32), np.array(col).astype(np.int32) )), shape=inputShape)
 
     out = mtx.tocsr()
     return out
@@ -528,406 +545,3 @@ def outerVertexTest (bounds):
     def test0 (v):
         return OR(AA(EQ)(CAT(AA(TRANS)(DISTR([bounds,v])))))
     return test0
-
-
-
-#------------------------------------------------------------------
-#--imaging layer (enumerative schemes w integer coords)------------
-#------------------------------------------------------------------
-
-#-------------------------------------------------------------------
-# 2D image toolbox
-'''
-def crossGrow(image,cross):
-    xm,x,xM,ym,y,yM = cross
-    pointValue = image[x,y]
-    if xm > 0 and image[xm-1,y] == pointValue: xm -= 1
-    if xM < 49 and image[xM+1,y] == pointValue: xM += 1
-    if ym > 0 and image[x,ym-1] == pointValue: ym -= 1
-    if yM < 49 and image[x,yM+1] == pointValue: yM += 1
-    return xm,x,xM,ym,y,yM
-
-def xbar(image,span,xspan):
-    xm,x0,xM,y0 = span
-    xmin,xMAX = xspan
-    pointValue = image[x0,y0]
-    if xm > xmin and image[xm-1,y0] == pointValue: xm -= 1
-    if xM < xMAX and image[xM+1,y0] == pointValue: xM += 1
-    return xm,x0,xM,y0
-
-def ybar(image,span,yspan):
-    x0,ym,y0,yM = span
-    ymin,yMAX = yspan
-    pointValue = image[x0,y0]
-    if ym > ymin and image[x0,ym-1] == pointValue: ym -= 1
-    if yM < yMAX and image[x0,yM+1] == pointValue: yM += 1
-    return x0,ym,y0,yM
-
-def delta(p,q): # area of rectangle (q,p)
-    vect = AA(abs)(VECTDIFF([p,q]))
-    return vect[0] * vect[1]
-'''
-#-------------------------------------------------------------------
-# 2D images to lar model
-'''
-def write2DBlock(cooStore):
-    def write2DBlock0(block):
-        x0,y0,dx,dy = block
-        [(cooStore.append([x0,j,1]), cooStore.append([x0+dx,j,1])) for j in range(y0,y0+dy+1)]
-        [(cooStore.append([i,y0,1]), cooStore.append([i,y0+dy,1])) for i in range(x0,x0+dx+1)]
-        return cooStore
-    return write2DBlock0
-
-
-def read2DBlock(lilStore):
-    def read2DBlock0(block):
-        x,y,dx,dy = block
-        outBlock = [[(i,y) for i in range(x,x+dx) if lilStore[i,y] > 2]]
-        outBlock.append([(x+dx,j) for j in range(y,y+dy) if lilStore[x+dx,j] > 2])
-        outBlock.append([(i,y+dy) for i in range(x+dx,x,-1) if lilStore[i,y+dy] > 2])
-        outBlock.append([(x,j) for j in range(y+dy,y,-1) if lilStore[x,j] > 2])
-        return CAT(outBlock)
-    return read2DBlock0
-
-
-def lar2DFromImageBlocks(blocks):
-    
-    # translation that moves the (xmin,ymin) point to the origin
-    xmin,ymin = AA(min)(TRANS([block[0:2] for block in blocks]))
-    blocks = [[x-xmin,y-ymin,dx,dy] for [x,y,dx,dy] in blocks]
-    
-    # store initialization
-    cooStore = []
-    def computeShape(blocks):
-        return AA(max)(TRANS([[x+dx,y+dy] for [x,y,dx,dy] in blocks]))
-    ax,ay = computeShape(blocks)
-    cooStore.append([0,0,2])
-    cooStore.append([ax,0,2])
-    cooStore.append([0,ay,2])
-    cooStore.append([ax,ay,2])
-
-    # forward step (writing the boundary of each block)
-    for block in blocks:
-        write2DBlock(cooStore)(block)
-    lilStore = csrCreateFromCoo(cooStore).tolil()
-
-    # backward step (reading the boundary of each block)
-    updatedBlock = [read2DBlock(lilStore)(block) for block in blocks]
-    verts = collections.OrderedDict(); k = 0
-    for block in updatedBlock:
-        for vert in block:
-            if vert not in verts:
-                verts[vert] = k
-                k += 1
-
-    # encoding the output
-    V = AA(AA(float))(verts.keys())
-    F2V = [[verts[vert] for vert in block] for block in updatedBlock]
-
-    # automatically adding the 4 exterior blocks of the 2D image
-    xmin,ymin = AA(amin)(TRANS(V))
-    xmax,ymax = AA(amax)(TRANS(V))
-    exterior_xmin, exterior_xmax, exterior_ymin, exterior_ymax = [],[],[],[]
-    for (key,value) in verts.items():
-        if key[0] == xmin: exterior_xmin.append(value)
-        if key[0] == xmax: exterior_xmax.append(value)
-        if key[1] == ymin: exterior_ymin.append(value)
-        if key[1] == ymax: exterior_ymax.append(value)
-
-    model = V,F2V + [exterior_xmin, exterior_xmax, exterior_ymin, exterior_ymax]
-    return model
-
-
-if __name__=="__main__":
-    blocks2D = [ [[0,0],[5,10]], [[5,0],[9,3]], [[9,0],[13,3]], [[5,3],[8,10]],  [[8,3],[13,10]], [[0,10],[9,12]]
-                , [[9,10],[13,12]] ]
-    
-    blocks = [ CAT([ block[0],VECTDIFF(REVERSE(block)) ])  for block in blocks2D ]
-    model = lar2DFromImageBlocks(blocks)
-    V,faces = larSkeletons(model,dim=2)
-    F0V, F1V, F2V = faces
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,F2V[:-4])) ))
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,F1V)) ))
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,F0V+F1V+F2V[:-4])) ))
-
-    boundary_2 = larBoundary(F1V,F2V[:-4])
-    chain_1 = larBoundaryChain(boundary_2,range(len(F2V[:-4])))
-    boundary_edges = csrChainToCellList(chain_1)
-    edges = [F1V[e] for e in boundary_edges]
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,edges)) ))
-
-
-[
- [0,0,0],
- [5,0,0],
- [9,0,0],
- [13,0,0],
- [5,3,0],
- [8,3,0],
- [9,3,0],
- [13,3,0],
- [0,10,0],
- [5,10,0],
- [8,10,0],
- [9,10,0],
- [13,10,0],
- [0,12,0],
- [9,12,0],
- [13,12,0]]
-'''
-#-------------------------------------------------------------------
-# 3D images to lar model
-
-# TODO:
-# Rewrite this section by using a stack of 2D sparse matrices
-# the trick to use:  store[x,y,z] => store[z][x,y] ... :o)
-# such a translation may be even encapsulated in a wrapping interface
-
-'''
-def write3DBlock(store):
-    def write3DBlock0(block):
-        x,y,z,dx,dy,dz = block
-        for j in range(y,y+dy+1):
-            for k in range(z,z+dz+1):
-                store[x,j,k] += 1
-                store[x+dx,j,k] += 1
-        for k in range(z,z+dz+1):
-            for i in range(x,x+dx+1):
-                store[i,y,k] += 1
-                store[i,y+dy,k] += 1
-        for i in range(x,x+dx+1):
-            for j in range(y,y+dy+1):
-                store[i,j,z] += 1
-                store[i,j,z+dz] += 1
-        return store
-    return write3DBlock0
-
-
-def read3DBlock(store):
-    def read3DBlock0(block):
-        x,y,z,dx,dy,dz = block
-        outBlock = [[(x,j,k) for j in range(y,y+dy+1) for k in range(z,z+dz+1) if store[x,j,k] > 3]]
-        outBlock.append([(x+dx,j,k) for j in range(y,y+dy+1) for k in range(z,z+dz+1) if store[x+dx,j,k] > 3])
-        outBlock.append([(i,y,k) for k in range(z,z+dz+1) for i in range(x,x+dx+1) if store[i,y,k] > 3])
-        outBlock.append([(i,y+dy,k) for k in range(z,z+dz+1) for i in range(x,x+dx+1) if store[i,y+dy,k] > 3])
-        outBlock.append([(i,j,z) for i in range(x,x+dx+1) for j in range(y,y+dy+1) if store[i,j,z] > 3])
-        outBlock.append([(i,j,z+dz) for i in range(x,x+dx+1) for j in range(y,y+dy+1) if store[i,j,z+dz] > 3])
-        return CAT(outBlock)
-    return read3DBlock0
-
-
-def lar3DFromImageBlocks(blocks):
-    
-    # translation that moves the (xmin,ymin,zmin) point to the origin
-    xmin,ymin,zmin = AA(min)(TRANS([block[0:3] for block in blocks]))
-    blocks = [[x-xmin,y-ymin,z-zmin,dx,dy,dz] for [x,y,z,dx,dy,dz] in blocks]
-    
-    # store initialization
-    def computeShape(blocks):
-        return AA(max)(TRANS([[x+dx,y+dy,z+dz] for [x,y,z,dx,dy,dz] in blocks]))
-    ax,ay,az = computeShape(blocks)
-    store = zeros(shape=(ax+1,ay+1,az+1),dtype=int)
-    store[0,0,0] += 2
-    store[ax,0,0] += 2
-    store[0,ay,0] += 2
-    store[0,0,az] += 2
-    store[ax,ay,0] += 2
-    store[ax,0,az] += 2
-    store[0,ay,az] += 2
-    store[ax,ay,az] += 2
-    
-    # forward step (writing the boundary of each block)
-    [ write3DBlock(store)(block) for block in blocks ]
-    store[ax,ay,az] += 2 # to solve the bug of the extreme vertex of the extreme block
-
-    # backward step (reading the boundary of each block)
-    updatedBlocks = [ read3DBlock(store)(block) for block in blocks ]
-    verts = collections.OrderedDict(); k = 0
-    for block in updatedBlocks:
-        for vert in block:
-            if vert not in verts:
-                verts[vert] = k
-                k += 1
-
-    # encoding the output
-    V = AA(AA(float))(verts.keys())
-    F3V = [[verts[vert] for vert in block] for block in updatedBlocks]
-                    
-    # automatically adding the 6 exterior blocks of the 3D image
-    xmin,ymin,zmin = AA(amin)(TRANS(V))
-    xmax,ymax,zmax = AA(amax)(TRANS(V))
-    exterior_xmin, exterior_xmax, exterior_ymin, exterior_ymax, exterior_zmin, exterior_zmax = [],[],[],[],[],[]
-    for (key,value) in verts.items():
-        if key[0] == xmin: exterior_xmin.append(value)
-        if key[0] == xmax: exterior_xmax.append(value)
-        if key[1] == ymin: exterior_ymin.append(value)
-        if key[1] == ymax: exterior_ymax.append(value)
-        if key[2] == zmin: exterior_zmin.append(value)
-        if key[2] == zmax: exterior_zmax.append(value)
-    esteriorCells = [exterior_xmin, exterior_xmax, exterior_ymin, exterior_ymax, exterior_zmin, exterior_zmax]
-    model = V, F3V + esteriorCells
-    return model
-
-if __name__=="__main__":
-
-    blocks3D = [ [[0,0,0],[5,10,3]], [[5,0,0],[9,3,3]], [[9,0,0],[13,3,3]], [[5,3,0],[8,10,3]],  [[8,3,0],[13,10,3]], [[0,10,0],[9,12,3]], [[9,10,0],[13,12,3]] ]
-    
-    blocks = [ CAT([ block[0],VECTDIFF(REVERSE(block)) ])  for block in blocks3D ]
-    model = lar3DFromImageBlocks(blocks)
-    V,faces = larSkeletons(model,dim=3)
-    F0V, F1V, F2V, F3V = faces
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,F3V[:-6])) ))
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,F2V)) ))
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,F1V)) ))
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,F0V+F1V+F2V+F3V[:-6])) ))
-
-    boundary_3 = larBoundary(F2V,F3V[:-6])
-    chain_2 = larBoundaryChain(boundary_3,range(len(F3V[:-6])))
-    boundary_faces = csrChainToCellList(chain_2)
-    faces = [F2V[f] for f in boundary_faces]
-    VIEW(EXPLODE(1.2,1.2,1.2)( MKPOLS((V,faces)) ))
-'''
-
-#------------------------------------------------------------------
-#--application layer (demo)----------------------------------------
-#------------------------------------------------------------------
-'''
-if __name__ == "__main__" and False:
-    
-    # input of topology and geometry
-    V = [[5.,29.],[17.,29.],[8.,25.],[11.,25.],[14.,25.],
-         [ 0.,23.], [5.,23.],[17.,23.],[27.,23.],[0.,20.],
-         [5.,20.],[8.,19.],[11.,19.],[11.,17.],[14.,17.],[0.,16.],
-         [5.,16.],[14.,16.],[17.,16.],[23.,16.],[0.,10.],
-         [14.,10.],[23.,10.],[27.,10.],[0.,6.],[5.,6.],[5.,3.],
-         [20.,3.],[23.,3.],[20.,0.],[27.,0.]]
-    
-    EV = [[5,6,0,1,7],[7,18],[18,17],[17,21,20],
-          [20,15,16,10,9,5], [12,11,2,3],[3,4,14,13,12],[7,8,23],[22,23],
-          [22,19,18],[22,28,27],[26,27],[26,25,24,20],[23,30,29,27]]
-    
-    FV = [[0,1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,17,18,20,21],
-          [7,8,18,19,22,23],[17,18,19,20,21,22,24,25,26,27,28],
-          [22,23,27,28,29,30]]
-    
-    
-    # characteristic matrices
-    csrFV = csrCreate(FV)
-    csrEV = csrCreate(EV)
-    print "\nFV =\n", csrToMatrixRepresentation(csrFV)
-    print "\nEV =\n", csrToMatrixRepresentation(csrEV)
-    
-    # transposition
-    csrVF = csrTranspose(csrFV)
-    print "\nFV.T =\n", csrToMatrixRepresentation(csrVF)
-    
-    # product
-    csrEF = matrixProduct(csrEV, csrVF)
-    print "\nEF =\n", csrToMatrixRepresentation(csrEF)
-    
-    # product and transposition
-    csrFE = csrTranspose(csrEF)
-    print "\nFE =\n", csrToMatrixRepresentation(csrFE)
-    
-    
-    # boundary and coboundary operators
-    facetLengths = [csrCell.getnnz() for csrCell in csrEV]
-    boundary = csrBoundaryFilter(csrEF,facetLengths)
-    coboundary = csrTranspose(boundary)
-    print "\ncoboundary =\n", csrToMatrixRepresentation(coboundary)
-    
-    
-    # boundary 1-chains (edge numerals) of unit 2-chains (i.e. 2-cells)
-    boundary_2_Op = boundary
-    _2cells = csrExtractAllGenerators(boundary_2_Op)
-    print "\n_2cells =\n", _2cells
-    
-    
-    # boundary 0-chains (vertex numerals) of unit 1-chains (i.e. 1-cells)
-    boundary_1_Op = csrTranspose(csrEV)
-    _1cells = csrExtractAllGenerators(boundary_1_Op)
-    print "\n_1cells =\n", _1cells
-    
-    
-    # 2D polygon complex
-    polygons2D = [STRUCT([ POLYLINE([V[v]
-                                     for v in EV[edge]]) for edge in cell])
-                  for cell in _2cells]
-    VIEW(EXPLODE(1.2,1.2,1)(polygons2D))
-    
-    
-    # 2D curved cell complex
-    cells2D = [SOLIDIFY(STRUCT([ bezier([V[v] for v in EV[edge]])
-                                for edge in cell]))
-               for cell in _2cells]
-    
-    _2Dmodel = (V,[[[v for v in EV[edge]] for edge in cell] for cell in _2cells])
-    
-    VIEW(EXPLODE(1.2,1.2,1)(cells2D))
-    colors = [RED,GREEN,BLUE,YELLOW,CYAN,MAGENTA,WHITE,GRAY,BLACK]
-    VIEW(STRUCT([COLOR(colors[k % 9])(cell) for k,cell in enumerate(cells2D)]))
-    
-    
-    # csr column representation of the total (row-)chain
-    total_2_chain = csrCreateTotalChain(csrGetNumberOfRows(csrFV))
-    print "\ntotal_2_chain =\n", csrChainToCellList(total_2_chain)
-    
-    
-    # boundary 1-chain computation
-    boundary_1_chain = csrBinFilter( matrixProduct(boundary, total_2_chain) )
-    boundary_1_cells = csrChainToCellList( boundary_1_chain )
-    print "\nboundary_1_cells =\n",boundary_1_cells
-    
-    
-    # boundary 1-chain visualization
-    boundary1D = AA(bezier)([[V[v] for v in EV[e]]
-                             for e in boundary_1_cells ])
-    VIEW(STRUCT(boundary1D))
-    
-    
-    # computation of interior 1-cells
-    interior_1_cells = [k for k in range(len(EV))
-                        if k not in boundary_1_cells]
-    print "\ninterior_1_cells =\n", interior_1_cells
-    
-    
-    
-    # visualization of interior 1-cells
-    interior1D= AA(bezier)([[V[v] for v in EV[e]]
-                            for e in interior_1_cells])
-    VIEW(STRUCT(AA(COLOR(RED))(boundary1D) +
-                cells2D + AA(COLOR(GREEN))(interior1D)))
-    
-    
-    # computation of a 0-complex
-    V_0 = [[0.],[5.],[10.],[15.],[20.]]
-    VV_0 = AA(LIST)(range(len(V_0))) # [[0],[1],[2],[3],[4]]
-    cells0D = AA(MK)([V_0[v[0]] for v in VV_0])
-    floors2D = AA(PROD)(CART([cells2D,cells0D]))
-    VIEW(EXPLODE(1.2,1.2,1.5)(floors2D))
-    
-    
-    # computation of a 1-complex
-    EV_1 = [[0,1],[1,2],[2,3],[3,4]]
-    csrEV_1 = csrCreateFromCoo(cooCreateFromBrc(EV_1))
-    csrVE_1 = csrTranspose(csrEV_1)
-    boundary1 = csrVE_1   # by def: max(VE_1[K]) == 1.
-    print "\nboundary1 =\n", csrToMatrixRepresentation(boundary1)
-    
-    
-    # 1D cell complex
-    total_1_chain = csrCreateTotalChain(csrGetNumberOfRows(csrEV_1))
-    print "\ntotal_1_chain =\n", total_1_chain
-    cells1D = [ POLYLINE([ V_0[v] for v in edge ]) for edge in EV_1 ]
-    VIEW(EXPLODE(2,2,2)(cells1D))
-    
-    
-    # Cartesian product complexes
-    boundary2D=AA(PROD)(CART([boundary1D,cells1D]))
-    interior2D=AA(PROD)(CART([interior1D,cells1D]))
-    VIEW(EXPLODE(1.1,1.1,1.5)(interior2D + floors2D))
-    solid3D = AA(PROD)(CART([cells2D,cells1D]))
-    VIEW(EXPLODE(1.1,1.1,1.5)(solid3D))
-    boundary3D = boundary2D + floors2D
-    VIEW(EXPLODE(1.1,1.1,1.5)(boundary3D))
-'''

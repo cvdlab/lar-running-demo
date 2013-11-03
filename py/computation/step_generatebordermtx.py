@@ -10,15 +10,7 @@ import gc
 import struct
 import sys
 import getopt, sys
-
-# ------------------------------------------------------------
-# Bash command
-#
-# $ python bordo3.py 64
-#
-# to get a bordo3.json of a 64x64x64 block
-#
-# ------------------------------------------------------------
+import traceback
 
 # ------------------------------------------------------------
 # Logging & Timer 
@@ -32,40 +24,26 @@ logging_level = 0;
 # 3 = many many details
 
 def log(n, l):
-
-    if __name__=="__main__" and n <= logging_level:
-        for s in l:
-            print "Log:", s;
+	if __name__=="__main__" and n <= logging_level:
+		for s in l:
+			print "Log:", s;
 
 timer = 1;
 
 timer_last =  tm.time()
 
 def timer_start(s):
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer start:" + s]);
-    timer_last = tm.time();
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer start:" + s]);
+	timer_last = tm.time();
 
 def timer_stop():
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
-
-# ------------------------------------------------------------
-# Utility toolbox
-# ------------------------------------------------------------
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
-# Computation of d-chain generators (d-cells)
-# ------------------------------------------------------------
-
-# Cubic cell complex
-# ------------------------------------------------------------
-
-
 # Computation of ∂3 operator on the image space
 # ------------------------------------------------------------
 
@@ -117,7 +95,6 @@ def main(argv):
 		
 	log(1, ["nx, ny, nz = " + str(nx) + "," + str(ny) + "," + str(nz)]);
 	
-	
 	def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
 
 	def invertIndex(nx,ny,nz):
@@ -168,8 +145,10 @@ def main(argv):
 	try:
 		computeBordo3(FV,CV,fileName)
 	except:
-		print "Unexpected error:", sys.exc_info()[0]
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
 		sys.exit(2)
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+	main(sys.argv[1:])

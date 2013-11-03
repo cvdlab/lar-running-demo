@@ -7,6 +7,7 @@ import gc
 import struct
 import getopt, sys
 import os
+import traceback
 
 # ------------------------------------------------------------
 # Logging & Timer 
@@ -20,27 +21,24 @@ logging_level = 0;
 # 3 = many many details
 
 def log(n, l):
-
-    if __name__=="__main__" and n <= logging_level:
-        for s in l:
-            print "Log:", s;
+	if __name__=="__main__" and n <= logging_level:
+		for s in l:
+			print "Log:", s;
 
 timer = 1;
 
 timer_last =  tm.time()
 
 def timer_start(s):
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer start:" + s]);
-    timer_last = tm.time();
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer start:" + s]);
+	timer_last = tm.time();
 
 def timer_stop():
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
 
@@ -66,7 +64,6 @@ def runComputation(FILE_IN,OUT_DIR):
 			writeOffsetToFile(file,LISTA_OFFSET[i])
 			# print len(LISTA_VETTORI[i])
 			file.write(bytearray(LISTA_VETTORI[i]))
-
 			i = i + 1;
 	
 def main(argv):
@@ -99,8 +96,10 @@ def main(argv):
 	try:
 		runComputation(FILE_IN,OUT_DIR)
 	except:
-		print "Unexpected error:", sys.exc_info()[0]
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
 		sys.exit(2)
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+	main(sys.argv[1:])

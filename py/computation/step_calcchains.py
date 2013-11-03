@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 # Logging & Timer 
 # ------------------------------------------------------------
 
-logging_level = 2; 
+logging_level = 0; 
 
 # 0 = no_logging
 # 1 = few details
@@ -26,27 +26,24 @@ logging_level = 2;
 # 3 = many many details
 
 def log(n, l):
-
-    if __name__=="__main__" and n <= logging_level:
-        for s in l:
-            print "Log:", s;
+	if __name__=="__main__" and n <= logging_level:
+		for s in l:
+			print "Log:", s;
 
 timer = 1;
 
 timer_last =  tm.time()
 
 def timer_start(s):
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer start:" + s]);
-    timer_last = tm.time();
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer start:" + s]);
+	timer_last = tm.time();
 
 def timer_stop():
-
-    global timer_last;
-    if __name__=="__main__" and timer == 1:   
-        log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
+	global timer_last;
+	if __name__=="__main__" and timer == 1:   
+		log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
 # Configuration parameters
@@ -82,13 +79,9 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 		endImage = startImage + imageDz
 		xEnd, yEnd = 0,0
 		theImage,colors,theColors = pngstack2array3d(INPUT_DIR, startImage, endImage, colors, pixelCalc, centroidsCalc)
-	
-		theColors = theColors.reshape(1,2) # colors??
 		
-		# print 'Z now:' + str(zBlock)
-		
-		background = max(theColors[0])
-		foreground = min(theColors[0])
+		# TODO: test this reshape for 3 colors
+		theColors = theColors.reshape(1,colors)
 		
 		for xBlock in range(imageHeight/imageDx):
 			
@@ -96,9 +89,6 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 				
 				xStart, yStart = xBlock * imageDx, yBlock * imageDy
 				xEnd, yEnd = xStart+imageDx, yStart+imageDy
-				
-				# print str(xStart) + '-' + str(xEnd)
-				# print str(yStart) + '-' + str(yEnd)
 				
 				image = theImage[:, xStart:xEnd, yStart:yEnd]
 				nz,nx,ny = image.shape
@@ -131,10 +121,6 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 							for z in range(nz):
 								for currCol in theColors[0]:
 									if (image[z,x,y] == currCol):
-										# tmpChain = chains3D[str(currCol)]
-										# tmpChain[addr(x,y,z)] = 1
-										# chains3D.update({str(currCol): tmpChain})
-										##
 										tmpChain = chains3D_old[str(currCol)]
 										tmpChain.append(addr(x,y,z))
 										chains3D_old.update({str(currCol): tmpChain})
@@ -143,7 +129,6 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 						for y in range(ny):
 							for z in range(nz):
 								for currCol in theColors[0]:
-									# print str(x) + '-' + str(y) + '-' + str(z) + '-' + str(currCol)
 									if (image[z,x,y] == currCol):
 										tmpChain = chains3D[str(currCol)]
 										tmpChain[addr(x,y,z)] = 1
@@ -151,19 +136,12 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 
 				# Compute the boundary complex of the quotient cell
 				# ------------------------------------------------------------
-
-				# timer_last = tm.time();
 				objectBoundaryChain = {}
 				if (calculateout == True):
 					for currCol in theColors[0]:
 						objectBoundaryChain.update( {str(currCol): larBoundaryChain(bordo3,chains3D_old[str(currCol)])} )
 				
-				# temp = objectBoundaryChain.toarray().astype(int32).flatten()
-				# l = len(temp)
-				# objectBoundaryChain_correct = scipy.sparse.csr_matrix((temp.reshape((l,1))))
-				# tempo_larboundary = tempo_larboundary + tm.time() - timer_last;
-				# print "Tempo larBoundaryChain() =", tempo_larboundary
-				# print 'Update results for: ' + str(xBlock) + '-' + str(yBlock)
+				# Save
 				for currCol in theColors[0]:
 					if ((xBlock == 0) and (yBlock == 0) and (zBlock == 0)):
 						LISTA_OFFSET.update( {str(currCol): np.array([[zStart,xStart,yStart]], dtype=int32)} )
@@ -211,7 +189,7 @@ def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-		log(1, [ "EOF or error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
+		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
 		sys.exit(2)
 	
 def main(argv):
@@ -290,4 +268,4 @@ def main(argv):
 	runComputation(imageDx, imageDy, imageDz, colors, calculateout, V, FV, DIR_IN, BEST_IMAGE, BORDER_FILE, DIR_O)
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+	main(sys.argv[1:])
