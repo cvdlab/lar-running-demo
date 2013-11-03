@@ -254,7 +254,7 @@ if [ $OPENCL -eq 1 ]; then
 		exit 1
 	fi	
 	# Call OpenCL JAR
-	# here use updated jar that outputs directly in binary
+	# here use updated jar that outputs directly in binary in $COMPUTATION_DIR_BIN
 else
 	python ./py/computation/step_calcchains.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
 	if [ $? -ne 0 ]; then
@@ -275,8 +275,8 @@ fi
 STL_DIR=$TMPDIRECTORY/$STLDIR
 mkdir -p $STL_DIR &> /dev/null
 COUNTFILE=1
-for binOut in $(ls $COMPUTATION_DIR/output); do
-	python ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_y -z $BORDER_Z -i $binOut -o $STL_DIR &> /dev/null
+for binOut in $(ls $COMPUTATION_DIR_BIN); do
+	python ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_y -z $BORDER_Z -i $COMPUTATION_DIR_BIN/$binOut -o $STL_DIR &> /dev/null
 	if [ $? -ne 0 ]; then
 		echo "Error while converting output to binary: $genOut"
 		exit 1
@@ -289,6 +289,6 @@ for binOut in $(ls $COMPUTATION_DIR/output); do
 		rm $STL_DIR/$stlFile
 	done
 	
+	echo "Model $STL_OUT_FILE ready."
 	COUNTFILE=$((COUNTFILE + 1))
-	
 done
