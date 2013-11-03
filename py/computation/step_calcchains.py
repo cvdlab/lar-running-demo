@@ -10,6 +10,7 @@ import gc
 from pngstack2array3d import *
 import struct
 import getopt, sys
+import traceback
 #
 import matplotlib.pyplot as plt
 
@@ -38,14 +39,14 @@ def timer_start(s):
 
     global timer_last;
     if __name__=="__main__" and timer == 1:   
-        print "Timer start:", s;
+        log(3, ["Timer start:" + s]);
     timer_last = tm.time();
 
 def timer_stop():
 
     global timer_last;
     if __name__=="__main__" and timer == 1:   
-        print "Timer stop :", tm.time() - timer_last;
+        log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
 # Configuration parameters
@@ -200,7 +201,7 @@ def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR
 			DATA = np.asarray(bordo3_json['DATA'], dtype=np.int8)
 			bordo3 = csr_matrix((DATA,COL,ROW),shape=(ROWCOUNT,COLCOUNT));
 
-	imageHeight,imageWidth = getImageData(INPUT_DIR+str(BEST_IMAGE)+".png")
+	imageHeight,imageWidth = getImageData(INPUT_DIR+str(BEST_IMAGE)+PNG_EXTENSION)
 	imageDepth = countFilesInADir(INPUT_DIR)
 	
 	Nx,Ny,Nz = imageHeight/imageDx, imageWidth/imageDx, imageDepth/imageDz
@@ -208,7 +209,9 @@ def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR
 		pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
 		computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O)
 	except:
-		print "Unexpected error:", sys.exc_info()[0]
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		log(1, [ "EOF or error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
 		sys.exit(2)
 	
 def main(argv):

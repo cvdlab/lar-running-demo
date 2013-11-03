@@ -7,6 +7,8 @@ import time as tm
 import gc
 import struct
 import getopt, sys
+import os
+import traceback
 
 # ------------------------------------------------------------
 # Logging & Timer 
@@ -33,14 +35,14 @@ def timer_start(s):
 
     global timer_last;
     if __name__=="__main__" and timer == 1:   
-        print "Timer start:", s;
+        log(3, ["Timer start:" + s]);
     timer_last = tm.time();
 
 def timer_stop():
 
     global timer_last;
     if __name__=="__main__" and timer == 1:   
-        print "Timer stop :", tm.time() - timer_last;
+        log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
 
@@ -50,14 +52,14 @@ def timer_stop():
 # outputVtx = outputVtx.obj
 # outputFaces = outputFaces.obj
 
-def readFile(V,FV,chunksize,inputFile="output.bin",OUT_DIR): #outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
+def readFile(V,FV,chunksize,inputFile,OUT_DIR): #outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
 	outputId = os.path.basename(inputFile).split('.')[0].split('-')[1]
 	outputVtx=OUT_DIR+"/output-a-Vtx-"+outputId+".stl"
 	outputFaces=OUT_DIR+"/output-b-Faces-"+outputId+".stl"
 
 	with open(inputFile, "rb") as file:
 		with open(outputVtx, "w") as fileVertex:
-			with open(outputVtx, "w") as fileFaces:
+			with open(outputFaces, "w") as fileFaces:
 
 				vertex_count = 1
 				old_vertex_count = vertex_count
@@ -65,71 +67,78 @@ def readFile(V,FV,chunksize,inputFile="output.bin",OUT_DIR): #outputVtx="outputV
 
 				try:
 					while True:
+						count += 1
 
-					count += 1
-
-					zStart = struct.unpack('>I', file.read(4))[0]
-					xStart = struct.unpack('>I', file.read(4))[0]
-					yStart = struct.unpack('>I', file.read(4))[0]
-				
-					log(1, ["zStart, xStart, yStart = " + str(zStart) + "," + str(xStart) + "," + str(yStart)]);
-					#	zStart, xStart, yStart = LISTA_OFFSET[i].astype(float64)
-
-					LISTA_VETTORI2 = np.zeros(chunksize,dtype=int32);
-
-					temp = file.read(chunksize);
-
-					timer_start("LISTA_VETTORI2 " + str(i));
-					i = 0
-					while (i < chunksize):
-						if (temp[i] == '\x01'):
-							LISTA_VETTORI2[i] = 1;
-							i = i + 1;
-					timer_stop();
-				
-					timer_start("objectBoundaryChain ");
-					l = len(LISTA_VETTORI2)
-					objectBoundaryChain = scipy.sparse.csr_matrix(LISTA_VETTORI2.reshape((l,1)))
-					timer_stop();
-
-					timer_start("csrChainToCellList " + str(i));
-					b2cells = csrChainToCellList(objectBoundaryChain)
-					timer_stop();
-
-					timer_start("MKPOLS " + str(i));
-				
-					for f in b2cells:
-						old_vertex_count = vertex_count
+						zStart = struct.unpack('>I', file.read(4))[0]
+						xStart = struct.unpack('>I', file.read(4))[0]
+						yStart = struct.unpack('>I', file.read(4))[0]
 					
-						for vtx in FV[f]:
-							fileVertex.write("v ")
-							fileVertex.write(str(V[vtx][0] + zStart))
-							fileVertex.write(" ")
-							fileVertex.write(str(V[vtx][1] + xStart))
-							fileVertex.write(" ")
-							fileVertex.write(str(V[vtx][2] + yStart))
-							fileVertex.write("\n")
-							vertex_count = vertex_count + 1
+						log(1, ["zStart, xStart, yStart = " + str(zStart) + "," + str(xStart) + "," + str(yStart)]);
+						#	zStart, xStart, yStart = LISTA_OFFSET[i].astype(float64)
+
+						LISTA_VETTORI2 = np.zeros(chunksize,dtype=int32);
+
+						# log(1, ["chunksize = " + str(chunksize)]);
+						temp = file.read(chunksize);
+						# log(1, ["chunksize = OK"]);
+
+						i = 0
+						timer_start("LISTA_VETTORI2 " + str(i));
+						while (i < chunksize):
+							if (temp[i] == '\x01'):
+								LISTA_VETTORI2[i] = 1;
+							i = i + 1;
+						timer_stop();
+						log(1, ["LISTA_VETTORI2[i] = " + str(i)]);
+					
+						timer_start("objectBoundaryChain ");
+						l = len(LISTA_VETTORI2)
+						objectBoundaryChain = scipy.sparse.csr_matrix(LISTA_VETTORI2.reshape((l,1)))
+						timer_stop();
+
+						timer_start("csrChainToCellList " + str(i));
+						b2cells = csrChainToCellList(objectBoundaryChain)
+						timer_stop();
+
+						timer_start("MKPOLS " + str(i));
+					
+						for f in b2cells:
+							old_vertex_count = vertex_count
 						
-						fileFaces.write("f ")
-						fileFaces.write(str(old_vertex_count + 0))
-						fileFaces.write(" ")
-						fileFaces.write(str(old_vertex_count + 1))
-						fileFaces.write(" ")
-						fileFaces.write(str(old_vertex_count + 3))
-						fileFaces.write("\n")
+							for vtx in FV[f]:
+								fileVertex.write("v ")
+								fileVertex.write(str(V[vtx][0] + xStart))
+								fileVertex.write(" ")
+								fileVertex.write(str(V[vtx][1] + yStart))
+								fileVertex.write(" ")
+								fileVertex.write(str(V[vtx][2] + zStart))
+								fileVertex.write("\n")
+								vertex_count = vertex_count + 1
+							
+							fileFaces.write("f ")
+							fileFaces.write(str(old_vertex_count + 0))
+							fileFaces.write(" ")
+							fileFaces.write(str(old_vertex_count + 1))
+							fileFaces.write(" ")
+							fileFaces.write(str(old_vertex_count + 3))
+							fileFaces.write("\n")
 
-						fileFaces.write("f ")
-						fileFaces.write(str(old_vertex_count + 0))
-						fileFaces.write(" ")
-						fileFaces.write(str(old_vertex_count + 3))
-						fileFaces.write(" ")
-						fileFaces.write(str(old_vertex_count + 2))
-						fileFaces.write("\n")		
+							fileFaces.write("f ")
+							fileFaces.write(str(old_vertex_count + 0))
+							fileFaces.write(" ")
+							fileFaces.write(str(old_vertex_count + 3))
+							fileFaces.write(" ")
+							fileFaces.write(str(old_vertex_count + 2))
+							fileFaces.write("\n")		
 
+						fileVertex.flush()
+						fileFaces.flush()
+						
 					timer_stop();
 				except:
-					print "EOF or error"
+					exc_type, exc_value, exc_traceback = sys.exc_info()
+					lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+					log(1, [ "EOF or error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
 
 def main(argv):
 	ARGS_STRING = 'Args: -x <borderX> -y <borderY> -z <borderZ> -i <inputfile> -o <outdir>'
@@ -141,7 +150,7 @@ def main(argv):
 		sys.exit(2)
 	
 	nx = ny = nz = 64
-	mandatory = 4
+	mandatory = 3
 	#Files
 	FILE_IN = ''
 	OUT_DIR = ''
@@ -155,7 +164,7 @@ def main(argv):
 		elif opt == '-z':
 			nz = int(arg)
 		elif opt == '-i':
-			FILE_IN= arg
+			FILE_IN = arg
 			mandatory = mandatory - 1
 		elif opt == '-o':
 			OUT_DIR = arg
@@ -182,17 +191,18 @@ def main(argv):
 	
 	v2coords = invertIndex(nx,ny,nz)
 
+	FV = []
 	for h in range(len(V)):
 		x,y,z = v2coords(h)
 		if (x < nx) and (y < ny): FV.append([h,ind(x+1,y,z),ind(x,y+1,z),ind(x+1,y+1,z)])
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])
 		if (y < ny) and (z < nz): FV.append([h,ind(x,y+1,z),ind(x,y,z+1),ind(x,y+1,z+1)])
 
-	try:
-		readFile(V,FV,chunksize,FILE_IN,OUT_DIR)
-	except:
-		print "Unexpected error:", sys.exc_info()[0]
-		sys.exit(2)
+	#try:
+	readFile(V,FV,chunksize,FILE_IN,OUT_DIR)
+	#except:
+	#	print "Unexpected error:", sys.exc_info()[0]
+	#	sys.exit(2)
 		
 if __name__ == "__main__":
    main(sys.argv[1:])

@@ -241,7 +241,6 @@ echo ""
 
 
 # Call chain computer. if opencl is diabled, enable computation of output
-# -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputdir> -q <bestimage>
 COMPUTATION_DIR=$TMPDIRECTORY/$COMPDIR
 mkdir -p $COMPUTATION_DIR &> /dev/null
 

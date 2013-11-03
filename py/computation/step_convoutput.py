@@ -33,14 +33,14 @@ def timer_start(s):
 
     global timer_last;
     if __name__=="__main__" and timer == 1:   
-        print "Timer start:", s;
+        log(3, ["Timer start:" + s]);
     timer_last = tm.time();
 
 def timer_stop():
 
     global timer_last;
     if __name__=="__main__" and timer == 1:   
-        print "Timer stop :", tm.time() - timer_last;
+        log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
 
@@ -64,6 +64,7 @@ def runComputation(FILE_IN,OUT_DIR):
 		i = 0
 		while (i < len(LISTA_VETTORI)):
 			writeOffsetToFile(file,LISTA_OFFSET[i])
+			# print len(LISTA_VETTORI[i])
 			file.write(bytearray(LISTA_VETTORI[i]))
 
 			i = i + 1;
