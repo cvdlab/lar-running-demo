@@ -66,107 +66,83 @@ def writeOffsetToFile(file, offsetCurr):
 	file.write( struct.pack('>I', offsetCurr[2]) )
 # ------------------------------------------------------------
 
-def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O):
+def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,DIR_O):
 	beginImageStack = 0
 	endImage = beginImageStack
 	MAX_CHAINS = colors
 	count = 0
 	
-	LISTA_VETTORI = {}
-	LISTA_VETTORI2 = {}
-	LISTA_OFFSET = {}
-	
 	fileName = "selettori-"
 	if (calculateout == True):
 		fileName = "output-"
 	
-	OUTFILES = {}
-	for col in range(colors):
-		OUTFILES.update( { str(color): open(DIR_O+'/'+fileName+str(color)+BIN_EXTENSION, "wb") } )
+	saveTheColors = centroidsCalc.reshape(1,colors)[0]
+	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
+	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
+	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
 	
-	saveTheColors = None
-	
-	for zBlock in range(imageDepth/imageDz):
-		startImage = endImage
-		endImage = startImage + imageDz
-		xEnd, yEnd = 0,0
-		theImage,colors,theColors = pngstack2array3d(INPUT_DIR, startImage, endImage, colors, pixelCalc, centroidsCalc)
-		
-		# TODO: test this reshape for 3 colors
-		theColors = theColors.reshape(1,colors)
-		saveTheColors = theColors[0]
-		
-		for xBlock in range(imageHeight/imageDx):
+	with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb") as newFile:
+		for zBlock in range(imageDepth/imageDz):
+			startImage = endImage
+			endImage = startImage + imageDz
+			xEnd, yEnd = 0,0
+			theImage,colors,theColors = pngstack2array3d(INPUT_DIR, startImage, endImage, colors, pixelCalc, centroidsCalc)
 			
-			for yBlock in range(imageWidth/imageDy):
+			# TODO: test this reshape for 3 colors
+			theColors = theColors.reshape(1,colors)
+			saveTheColors = theColors[0]
+			
+			for xBlock in range(imageHeight/imageDx):
 				
-				xStart, yStart = xBlock * imageDx, yBlock * imageDy
-				xEnd, yEnd = xStart+imageDx, yStart+imageDy
-				
-				image = theImage[:, xStart:xEnd, yStart:yEnd]
-				nz,nx,ny = image.shape
-				
-				count += 1
+				for yBlock in range(imageWidth/imageDy):
+					
+					xStart, yStart = xBlock * imageDx, yBlock * imageDy
+					xEnd, yEnd = xStart+imageDx, yStart+imageDy
+					
+					image = theImage[:, xStart:xEnd, yStart:yEnd]
+					nz,nx,ny = image.shape
+					
+					count += 1
 
-				# Compute a quotient complex of chains with constant field
-				# ------------------------------------------------------------
+					# Compute a quotient complex of chains with constant field
+					# ------------------------------------------------------------
 
-				chains3D_old = {};
-				chains3D = {};
-				
-				for currCol in theColors[0]:
-					chains3D_old.update({str(currCol): []})
-					chains3D.update({str(currCol): np.zeros(nx*ny*nz,dtype=int32)})
+					chains3D_old = [];
+					chains3D = None
+					if (calculateout != True):
+						chains3D = np.zeros(nx*ny*nz,dtype=int32);
 
-				zStart = startImage - beginImageStack;
+					zStart = startImage - beginImageStack;
 
-				def addr(x,y,z): return x + (nx) * (y + (ny) * (z))
-				
-				if (calculateout == True):
-					for x in range(nx):
-						for y in range(ny):
-							for z in range(nz):
-								for currCol in theColors[0]:
-									if (image[z,x,y] == currCol):
-										tmpChain = chains3D_old[str(currCol)]
-										tmpChain.append(addr(x,y,z))
-										chains3D_old.update({str(currCol): tmpChain})
-				else:
-					for x in range(nx):
-						for y in range(ny):
-							for z in range(nz):
-								for currCol in theColors[0]:
-									if (image[z,x,y] == currCol):
-										tmpChain = chains3D[str(currCol)]
-										tmpChain[addr(x,y,z)] = 1
-										chains3D.update({str(currCol): tmpChain})
-
-				# Compute the boundary complex of the quotient cell
-				# ------------------------------------------------------------
-				objectBoundaryChain = {}
-				if (calculateout == True):
-					for currCol in theColors[0]:
-						objectBoundaryChain.update( {str(currCol): larBoundaryChain(bordo3,chains3D_old[str(currCol)])} )
-				
-				# Save
-				colorlen = 0
-				while colorlen < len(theColors[0]): 
-					currCol = theColors[0][currCol]
-					colorLenStr = str(colorlen)
-					#
-					writeOffsetToFile( OUTFILES[colorLenStr], np.array([zStart,xStart,yStart], dtype=int32) )
+					def addr(x,y,z): return x + (nx) * (y + (ny) * (z))
+					
 					if (calculateout == True):
-						OUTFILES[colorLenStr].write( bytearray( np.array(objectBoundaryChain[str(currCol)].toarray().astype('b').flatten()) ) )
+						for x in range(nx):
+							for y in range(ny):
+								for z in range(nz):
+									if (image[z,x,y] == theColors[0][colorIdx]):
+										chains3D_old.append(addr(x,y,z))
 					else:
-						OUTFILES[colorLenStr].write( bytearray( np.array(chains3D[str(currCol)], dtype=np.dtype('b')) ) )
-					colorlen = colorlen + 1
-						
-	for col in range(colors):
-		OUTFILES[str(col)].flush()
-		OUTFILES[str(col)].close()
-		os.rename(DIR_O+'/'+fileName+str(col)+BIN_EXTENSION, DIR_O+'/'+fileName+str(saveTheColors[col])+BIN_EXTENSION)
-		
-def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
+						for x in range(nx):
+							for y in range(ny):
+								for z in range(nz):
+									if (image[z,x,y] == theColors[0][colorIdx]):
+										chains3D[addr(x,y,z)] = 1
+
+					# Compute the boundary complex of the quotient cell
+					# ------------------------------------------------------------
+					objectBoundaryChain = None
+					if (calculateout == True):
+						objectBoundaryChain = larBoundaryChain(bordo3,chains3D_old)
+					
+					# Save
+					writeOffsetToFile( newFile, np.array([zStart,xStart,yStart], dtype=int32) )
+					if (calculateout == True):
+						newFile.write( bytearray( np.array(objectBoundaryChain.toarray().astype('b').flatten()) ) )
+					else:
+						newFile.write( bytearray( np.array(chains3D, dtype=np.dtype('b')) ) )
+
+def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
 	bordo3 = None
 	
 	if (calculateout == True):
@@ -185,7 +161,7 @@ def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR
 	Nx,Ny,Nz = imageHeight/imageDx, imageWidth/imageDx, imageDepth/imageDz
 	try:
 		pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
-		computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, INPUT_DIR,DIR_O)
+		computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, coloridx,INPUT_DIR,DIR_O)
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
@@ -193,18 +169,19 @@ def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR
 		sys.exit(2)
 	
 def main(argv):
-	ARGS_STRING = 'Args: -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -o <outputdir> -q <bestimage>'
+	ARGS_STRING = 'Args: -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -d <coloridx> -o <outputdir> -q <bestimage>'
 
 	try:
-		opts, args = getopt.getopt(argv,"rb:x:y:z:i:c:o:q:")
+		opts, args = getopt.getopt(argv,"rb:x:y:z:i:c:d:o:q:")
 	except getopt.GetoptError:
 		print ARGS_STRING
 		sys.exit(2)
 	
 	nx = ny = nz = imageDx = imageDy = imageDz = 64
 	colors = 2
+	coloridx = 0
 	
-	mandatory = 5
+	mandatory = 6
 	calculateout = False
 	#Files
 	BORDER_FILE = 'bordo3.json'
@@ -234,11 +211,19 @@ def main(argv):
 		elif opt == '-c':
 			mandatory = mandatory - 1
 			colors = int(arg)
+		elif opt == '-d':
+			mandatory = mandatory - 1
+			coloridx = int(arg)			
 		elif opt == '-q':
 			BEST_IMAGE = int(arg)
 			
 	if mandatory != 0:
 		print 'Not all arguments where given'
+		print ARGS_STRING
+		sys.exit(2)
+		
+	if (coloridx >= colors):
+		print 'Not all arguments where given (coloridx >= colors)'
 		print ARGS_STRING
 		sys.exit(2)
 		
@@ -265,7 +250,7 @@ def main(argv):
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])
 		if (y < ny) and (z < nz): FV.append([h,ind(x,y+1,z),ind(x,y,z+1),ind(x,y+1,z+1)])
 
-	runComputation(imageDx, imageDy, imageDz, colors, calculateout, V, FV, DIR_IN, BEST_IMAGE, BORDER_FILE, DIR_O)
+	runComputation(imageDx, imageDy, imageDz, colors, coloridx, calculateout, V, FV, DIR_IN, BEST_IMAGE, BORDER_FILE, DIR_O)
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
