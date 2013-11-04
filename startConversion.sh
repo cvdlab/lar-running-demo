@@ -1,7 +1,7 @@
 #!/bin/bash
 MYSELF=`basename $0`
 WORKINDIR=$(pwd)
-JARNAME="lar.jar"
+JARNAME="lar-javacl.jar"
 #
 TMPNAME="tmp"
 IMGDIRNAME="img"
