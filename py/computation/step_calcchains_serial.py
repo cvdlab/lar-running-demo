@@ -189,7 +189,7 @@ def main(argv):
 	colors = 2
 	coloridx = 0
 	
-	mandatory = 5
+	mandatory = 6
 	calculateout = False
 	#Files
 	BORDER_FILE = 'bordo3.json'
