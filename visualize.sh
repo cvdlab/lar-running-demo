@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 MESHLAB=$(which meshlab)
 MANTA=$(which manta)
@@ -14,6 +14,7 @@ if [ -z "$MODELINPUT" ] || [ ! -r "$MODELINPUT" ]; then
 	echo "Wrong file $MODELINPUT"
 	exit 1
 fi
+MODELINPUT=$(echo $MODELINPUT | sed 's/ /\\ /g')
 
 VISUALIZE=1
 
@@ -44,7 +45,10 @@ case "$VIS_SELECT" in
     $MESHLAB $MODELINPUT
     ;;
 "3")
-    $MANTA -np 2 -ui X -scene "lib/libscene_triangleSceneViewer( -model $MODELINPUT -DynBVH -smoothAnimation -overrideMatl eyelight -ambient constant )"
+	MANTADIR=$(dirname ${MANTA})
+	cd $MANTADIR
+	cd ..
+    bin/manta -np 2 -ui X -scene "lib/libscene_triangleSceneViewer( -model $MODELINPUT -DynBVH -smoothAnimation -overrideMatl eyelight -ambient constant )"
     ;;
 *)
     echo ""
