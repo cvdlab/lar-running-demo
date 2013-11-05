@@ -2,13 +2,48 @@
 
 MESHLAB=$(which meshlab)
 MANTA=$(which manta)
+# ****
+chmod 0755 ./sh/*.sh
+# ****
+
+show_help() {
+	echo "Either run without args or with"
+	echo "To use args enable it with -u"
+	echo "-f <input model>	: Obj input model"
+}
+
+USECMDLINE=0
+OPTIND=1 # Reset is necessary if getopts was used previously in the script.  It is a good idea to make this local in a function.
+while getopts "h?uf:" opt; do
+	case "$opt" in
+		h|\?)
+			show_help
+			exit 0
+			;;
+		u)  USECMDLINE=1
+			;;
+		f)  MODELINPUT=$OPTARG
+			;;
+	esac
+done
+shift $((OPTIND-1)) # Shift off the options and optional --.
+
+echo "** Checking Basic Prerequisites **"
+
+sh ./sh/prerequites-python.sh
+if [ $? -ne 0 ]; then
+	echo "Missing prerequisites, install them (check output)."
+	exit 1
+fi
 
 echo "*********************"
 echo "Visualize model"
 echo "*********************"
 
-echo -n "Enter OBJ model filename (with path) [ENTER]: "
-read MODELINPUT
+if [ "$USECMDLINE" -eq "0" ]; then
+	echo -n "Enter OBJ model filename (with path) [ENTER]: "
+	read MODELINPUT
+fi
 
 if [ -z "$MODELINPUT" ] || [ ! -r "$MODELINPUT" ]; then
 	echo "Wrong file $MODELINPUT"
