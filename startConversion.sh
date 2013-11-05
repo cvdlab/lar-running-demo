@@ -44,21 +44,26 @@ while getopts "h?cud:f:q:" opt; do
 			;;
 		q)  COLORS=$OPTARG
 			;;
-		c)  OPENCL=0
+		c)  OPENCL="y"
 			;;
 	esac
 done
 shift $((OPTIND-1)) # Shift off the options and optional --.
 
-echo "** Checking prerequisites **"
+echo "** Checking Basic Prerequisites **"
 
-sh ./sh/prerequites.sh
-
+sh ./sh/prerequites-python.sh
 if [ $? -ne 0 ]; then
 	echo "Missing prerequisites, install them (check output)."
 	exit 1
 fi
 
+sh ./sh/prerequites-imagick.sh
+if [ $? -ne 0 ]; then
+	echo "Missing prerequisites, install them (check output)."
+	exit 1
+fi
+	
 echo "==================="
 echo "** Input data **"
 
@@ -97,6 +102,13 @@ if [ -z "$OPENCL" ] || [ "$OPENCL" != "y" ]; then
 else 
 	echo "Using OpenCL for available operations"
 	OPENCL=1
+	
+	# Check for Java now
+	sh ./sh/prerequites-java.sh
+	if [ $? -ne 0 ]; then
+		echo "Missing prerequisites, install them (check output)."
+		exit 1
+	fi
 fi
 
 # Empty line
@@ -144,6 +156,7 @@ BESTFILE=$STARTFILE
 
 echo -n "Converting input images..."
 if [ "$EXTFILE" == "png" ] || [ "$EXTFILE" == "jpg" ]; then
+	# Convert
 	for currFile in $(ls $TMPIMGDIRECTORY) ; do
 		# fileName="${currFile##*/}"
 		convert -colorspace gray $TMPIMGDIRECTORY/$currFile $TMPIMGDIRECTORY/$COUNTFILE.png
@@ -155,6 +168,13 @@ if [ "$EXTFILE" == "png" ] || [ "$EXTFILE" == "jpg" ]; then
 		COUNTFILE=$((COUNTFILE + 1))
 	done
 elif [ "$EXTFILE" == "dcm" ]; then
+	# Check for DCM now
+	sh ./sh/prerequites-dcm.sh
+	if [ $? -ne 0 ]; then
+		echo "Missing prerequisites, install them (check output)."
+		exit 1
+	fi
+	# Convert
 	for currFile in $(ls $TMPIMGDIRECTORY) ; do
 		# fileName="${currFile##*/}"
 		dcm2pnm +G +on $TMPIMGDIRECTORY/$currFile $TMPIMGDIRECTORY/$COUNTFILE.png

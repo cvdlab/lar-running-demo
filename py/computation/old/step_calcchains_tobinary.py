@@ -129,6 +129,11 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 
 				def addr(x,y,z): return x + (nx) * (y + (ny) * (z))
 				
+				
+				hasSomeOne = {}
+				for currCol in saveTheColors:
+					hasSomeOne.update(str(currCol), False)
+					
 				if (calculateout == True):
 					for x in range(nx):
 						for y in range(ny):
@@ -147,6 +152,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 										tmpChain = chains3D[str(currCol)]
 										tmpChain[addr(x,y,z)] = 1
 										chains3D.update({str(currCol): tmpChain})
+										hasSomeOne.update(str(currCol), True)
 
 				# Compute the boundary complex of the quotient cell
 				# ------------------------------------------------------------
@@ -164,7 +170,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 							writeOffsetToFile( OUTFILES[colorLenStr], np.array([zStart,xStart,yStart], dtype=int32) )
 							OUTFILES[colorLenStr].write( bytearray( np.array(objectBoundaryChain[str(currCol)].toarray().astype('b').flatten()) ) )
 					else:
-						if (isArrayEmpty(chains3D[str(currCol)]) != True):
+						if (hasSomeOne[str(currCol)] != False):
 							writeOffsetToFile( OUTFILES[colorLenStr], np.array([zStart,xStart,yStart], dtype=int32) )
 							OUTFILES[colorLenStr].write( bytearray( np.array(chains3D[str(currCol)], dtype=np.dtype('b')) ) )
 						

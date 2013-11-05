@@ -92,7 +92,6 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 			xEnd, yEnd = 0,0
 			theImage,colors,theColors = pngstack2array3d(INPUT_DIR, startImage, endImage, colors, pixelCalc, centroidsCalc)
 			
-			# TODO: test this reshape for 3 colors
 			theColors = theColors.reshape(1,colors)
 			if (sorted(theColors[0]) != saveTheColors):
 				log(1, [ "Error: colors have changed"] )
@@ -121,6 +120,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 
 					def addr(x,y,z): return x + (nx) * (y + (ny) * (z))
 					
+					hasSomeOne = False
 					if (calculateout == True):
 						for x in range(nx):
 							for y in range(ny):
@@ -132,6 +132,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 							for y in range(ny):
 								for z in range(nz):
 									if (image[z,x,y] == saveTheColors[colorIdx]):
+										hasSomeOne = True
 										chains3D[addr(x,y,z)] = 1
 
 					# Compute the boundary complex of the quotient cell
@@ -146,7 +147,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 							writeOffsetToFile( newFile, np.array([zStart,xStart,yStart], dtype=int32) )
 							newFile.write( bytearray( np.array(objectBoundaryChain.toarray().astype('b').flatten()) ) )
 					else:
-						if (isArrayEmpty(chains3D) != True):
+						if (hasSomeOne != False):
 							writeOffsetToFile( newFile, np.array([zStart,xStart,yStart], dtype=int32) )
 							newFile.write( bytearray( np.array(chains3D, dtype=np.dtype('b')) ) )
 
