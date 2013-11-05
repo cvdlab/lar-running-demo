@@ -2,6 +2,8 @@
 MYSELF=`basename $0`
 WORKINDIR=$(pwd)
 JARNAME="lar-javacl.jar"
+PYBIN=$(which python)
+JAVABIN=$(which java)
 #
 TMPNAME="tmp"
 IMGDIRNAME="img"
@@ -232,7 +234,7 @@ mkdir -p $BORDER_DIR &> /dev/null
 
 if [ ! -r $BORDER_DIR/$BORDER_FILE ]; then
 	echo -n "Generating border matrix ... "
-	python ./py/computation/step_generatebordermtx.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -o $BORDER_DIR &> /dev/null
+	$PYBIN ./py/computation/step_generatebordermtx.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -o $BORDER_DIR &> /dev/null
 	if [ $? -ne 0 ]; then
 		echo -n "Error while generating $BORDER_DIR/$BORDER_FILE. Exiting."
 		exit 1
@@ -253,20 +255,24 @@ COMPUTATION_DIR_BIN=$TMPDIRECTORY/$COMPDIRBIN
 mkdir -p $COMPUTATION_DIR_BIN &> /dev/null
 
 if [ $OPENCL -eq 1 ]; then
-	echo -n "Computing input JSON chains... "
-	python ./py/computation/step_calcchains.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
-	if [ $? -ne 0 ]; then
-		echo "Error while computing chains"
-		exit 1
-	fi
+	echo -n "Computing input binary chains... "
+	CHAINCURR=0
+	while [ $CHAINCURR -lt $COLORS ]; do
+		$PYBIN ./py/computation/step_calcchains_serial_tobinary.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
+		if [ $? -ne 0 ]; then
+			echo "Error while computing output chains"
+			exit 1
+		fi
+		CHAINCURR=$((CHAINCURR + 1))
+	done
 	echo -n "done!"
 	echo ""	
 	# Call OpenCL JAR
 	# here use updated jar that outputs directly in binary in $COMPUTATION_DIR_BIN
 	echo -n "Computing output binary chains... "
-	for selettoreFile in $(ls $COMPUTATION_DIR/*.json); do
+	for selettoreFile in $(ls $COMPUTATION_DIR/*.bin); do
 		selettoreId=$(echo $selettoreFile | cut -d'.' -f1 | cut -d'-' -f2)
-		LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so java -d64 -Xcheck:jni -Xmx14G -XX:MaxPermSize=4G -XX:PermSize=512M -jar ./java/$JARNAME -b $BORDER_DIR/$BORDER_FILE -s $COMPUTATION_DIR/$selettoreFile -y $COMPUTATION_DIR_BIN/output-$selettoreId.bin
+		LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so $JAVABIN -d64 -Xcheck:jni -Xmx14G -XX:MaxPermSize=4G -XX:PermSize=512M -jar ./java/$JARNAME -b $BORDER_DIR/$BORDER_FILE -v $COMPUTATION_DIR/$selettoreFile -w $(($BORDER_X * $BORDER_Y * $BORDER_Z)) -y $COMPUTATION_DIR_BIN/output-$selettoreId.bin
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output binary chains"
 			exit 1
@@ -275,22 +281,15 @@ if [ $OPENCL -eq 1 ]; then
 	echo -n "done!"
 	echo ""	
 else
-	echo -n "Computing output JSON chains... "
-	python ./py/computation/step_calcchains.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
-	if [ $? -ne 0 ]; then
-		echo "Error while computing output chains"
-		exit 1
-	fi
-	echo -n "done!"
-	echo ""
-	#Convert output-*.json to .bin
-	echo -n "Converting to binary ... "
-	for genOut in $(ls $COMPUTATION_DIR/output); do
-		python ./py/computation/step_convoutput.py -i $COMPUTATION_DIR/$genOut -o $COMPUTATION_DIR_BIN &> /dev/null
+	echo -n "Computing output binary chains... "
+	CHAINCURR=0
+	while [ $CHAINCURR -lt $COLORS ]; do
+		$PYBIN ./py/computation/step_calcchains_serial_tobinary.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN &> /dev/null
 		if [ $? -ne 0 ]; then
-			echo "Error while converting output to binary: $genOut"
+			echo "Error while computing output chains"
 			exit 1
 		fi
+		CHAINCURR=$((CHAINCURR + 1))
 	done
 	echo -n "done!"
 	echo ""
@@ -300,9 +299,9 @@ fi
 STL_DIR=$TMPDIRECTORY/$STLDIR
 mkdir -p $STL_DIR &> /dev/null
 COUNTFILE=1
-echo "Converting to stl model ... "
+echo "Converting to wavefront model ... "
 for binOut in $(ls $COMPUTATION_DIR_BIN); do
-	python ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_y -z $BORDER_Z -i $COMPUTATION_DIR_BIN/$binOut -o $STL_DIR &> /dev/null
+	$PYBIN ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_y -z $BORDER_Z -i $COMPUTATION_DIR_BIN/$binOut -o $STL_DIR &> /dev/null
 	if [ $? -ne 0 ]; then
 		echo "Error while converting output to binary: $genOut"
 		exit 1
@@ -315,6 +314,6 @@ for binOut in $(ls $COMPUTATION_DIR_BIN); do
 		rm $STL_DIR/$stlFile
 	done
 	
-	echo "Model $STL_OUT_FILE ready."
+	echo "Wavefront model $STL_OUT_FILE ready."
 	COUNTFILE=$((COUNTFILE + 1))
 done

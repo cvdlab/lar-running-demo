@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 # Logging & Timer 
 # ------------------------------------------------------------
 
-logging_level = 0; 
+logging_level = 1; 
 
 # 0 = no_logging
 # 1 = few details
@@ -59,6 +59,9 @@ BIN_EXTENSION = ".bin"
 def countFilesInADir(directory):
 	return len(os.walk(directory).next()[2])
 	
+def isArrayEmpty(arr):
+	return all(e == 0 for e in arr)
+	
 # ------------------------------------------------------------
 def writeOffsetToFile(file, offsetCurr):
 	file.write( struct.pack('>I', offsetCurr[0]) )
@@ -76,7 +79,8 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 	if (calculateout == True):
 		fileName = "output-"
 	
-	saveTheColors = centroidsCalc.reshape(1,colors)[0]
+	saveTheColors = centroidsCalc
+	saveTheColors = sorted(saveTheColors.reshape(1,colors)[0])
 	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
 	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
@@ -90,10 +94,11 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 			
 			# TODO: test this reshape for 3 colors
 			theColors = theColors.reshape(1,colors)
-			saveTheColors = theColors[0]
+			if (sorted(theColors[0]) != saveTheColors):
+				log(1, [ "Error: colors have changed"] )
+				sys.exit(2)
 			
 			for xBlock in range(imageHeight/imageDx):
-				
 				for yBlock in range(imageWidth/imageDy):
 					
 					xStart, yStart = xBlock * imageDx, yBlock * imageDy
@@ -120,19 +125,19 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 						for x in range(nx):
 							for y in range(ny):
 								for z in range(nz):
-									if (image[z,x,y] == theColors[0][colorIdx]):
+									if (image[z,x,y] == saveTheColors[colorIdx]):
 										chains3D_old.append(addr(x,y,z))
 					else:
 						for x in range(nx):
 							for y in range(ny):
 								for z in range(nz):
-									if (image[z,x,y] == theColors[0][colorIdx]):
+									if (image[z,x,y] == saveTheColors[colorIdx]):
 										chains3D[addr(x,y,z)] = 1
 
 					# Compute the boundary complex of the quotient cell
 					# ------------------------------------------------------------
 					objectBoundaryChain = None
-					if (calculateout == True):
+					if (calculateout == True) and (len(chains3D_old) > 0):
 						objectBoundaryChain = larBoundaryChain(bordo3,chains3D_old)
 					
 					# Save
