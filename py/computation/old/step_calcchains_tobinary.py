@@ -90,8 +90,6 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 	for currCol in saveTheColors:
 		OUTFILES.update( { str(currCol): open(DIR_O+'/'+fileName+str(currCol)+BIN_EXTENSION, "wb") } )
 	
-	saveTheColors = None
-	
 	for zBlock in range(imageDepth/imageDz):
 		startImage = endImage
 		endImage = startImage + imageDz
