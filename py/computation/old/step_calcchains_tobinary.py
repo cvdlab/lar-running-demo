@@ -59,6 +59,9 @@ BIN_EXTENSION = ".bin"
 def countFilesInADir(directory):
 	return len(os.walk(directory).next()[2])
 	
+def isArrayEmpty(arr):
+	return all(e == 0 for e in arr)
+	
 # ------------------------------------------------------------
 def writeOffsetToFile(file, offsetCurr):
 	file.write( struct.pack('>I', offsetCurr[0]) )
@@ -80,9 +83,12 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 	if (calculateout == True):
 		fileName = "output-"
 	
+	saveTheColors = centroidsCalc
+	saveTheColors = sorted(saveTheColors.reshape(1,colors)[0])
+	
 	OUTFILES = {}
-	for col in range(colors):
-		OUTFILES.update( { str(color): open(DIR_O+'/'+fileName+str(color)+BIN_EXTENSION, "wb") } )
+	for currCol in saveTheColors:
+		OUTFILES.update( { str(currCol): open(DIR_O+'/'+fileName+str(currCol)+BIN_EXTENSION, "wb") } )
 	
 	saveTheColors = None
 	
@@ -94,8 +100,10 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 		
 		# TODO: test this reshape for 3 colors
 		theColors = theColors.reshape(1,colors)
-		saveTheColors = theColors[0]
-		
+		if (sorted(theColors[0]) != saveTheColors):
+			log(1, [ "Error: colors have changed"] )
+			sys.exit(2)
+				
 		for xBlock in range(imageHeight/imageDx):
 			
 			for yBlock in range(imageWidth/imageDy):
@@ -114,9 +122,10 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 				chains3D_old = {};
 				chains3D = {};
 				
-				for currCol in theColors[0]:
+				for currCol in saveTheColors:
 					chains3D_old.update({str(currCol): []})
-					chains3D.update({str(currCol): np.zeros(nx*ny*nz,dtype=int32)})
+					if (calculateout != True):
+						chains3D.update({str(currCol): np.zeros(nx*ny*nz,dtype=int32)})
 
 				zStart = startImage - beginImageStack;
 
@@ -126,7 +135,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 					for x in range(nx):
 						for y in range(ny):
 							for z in range(nz):
-								for currCol in theColors[0]:
+								for currCol in saveTheColors:
 									if (image[z,x,y] == currCol):
 										tmpChain = chains3D_old[str(currCol)]
 										tmpChain.append(addr(x,y,z))
@@ -135,7 +144,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 					for x in range(nx):
 						for y in range(ny):
 							for z in range(nz):
-								for currCol in theColors[0]:
+								for currCol in saveTheColors:
 									if (image[z,x,y] == currCol):
 										tmpChain = chains3D[str(currCol)]
 										tmpChain[addr(x,y,z)] = 1
@@ -145,26 +154,25 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 				# ------------------------------------------------------------
 				objectBoundaryChain = {}
 				if (calculateout == True):
-					for currCol in theColors[0]:
-						objectBoundaryChain.update( {str(currCol): larBoundaryChain(bordo3,chains3D_old[str(currCol)])} )
-				
+					for currCol in saveTheColors:
+						if (len(chains3D_old[str(currCol)]) > 0):
+							objectBoundaryChain.update( {str(currCol): larBoundaryChain(bordo3,chains3D_old[str(currCol)])} )
+						else
+							objectBoundaryChain.update( {str(currCol): None} )
 				# Save
-				colorlen = 0
-				while colorlen < len(theColors[0]): 
-					currCol = theColors[0][currCol]
-					colorLenStr = str(colorlen)
-					#
-					writeOffsetToFile( OUTFILES[colorLenStr], np.array([zStart,xStart,yStart], dtype=int32) )
+				for currCol in saveTheColors:
 					if (calculateout == True):
-						OUTFILES[colorLenStr].write( bytearray( np.array(objectBoundaryChain[str(currCol)].toarray().astype('b').flatten()) ) )
+						if (objectBoundaryChain[str(currCol)] != None):
+							writeOffsetToFile( OUTFILES[colorLenStr], np.array([zStart,xStart,yStart], dtype=int32) )
+							OUTFILES[colorLenStr].write( bytearray( np.array(objectBoundaryChain[str(currCol)].toarray().astype('b').flatten()) ) )
 					else:
-						OUTFILES[colorLenStr].write( bytearray( np.array(chains3D[str(currCol)], dtype=np.dtype('b')) ) )
-					colorlen = colorlen + 1
+						if (isArrayEmpty(chains3D[str(currCol)]) != True):
+							writeOffsetToFile( OUTFILES[colorLenStr], np.array([zStart,xStart,yStart], dtype=int32) )
+							OUTFILES[colorLenStr].write( bytearray( np.array(chains3D[str(currCol)], dtype=np.dtype('b')) ) )
 						
-	for col in range(colors):
-		OUTFILES[str(col)].flush()
-		OUTFILES[str(col)].close()
-		os.rename(DIR_O+'/'+fileName+str(col)+BIN_EXTENSION, DIR_O+'/'+fileName+str(saveTheColors[col])+BIN_EXTENSION)
+	for currCol in saveTheColors:
+		OUTFILES[str(currCol)].flush()
+		OUTFILES[str(currCol)].close()
 		
 def runComputation(imageDx,imageDy,imageDz, colors,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
 	bordo3 = None

@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 # Logging & Timer 
 # ------------------------------------------------------------
 
-logging_level = 1; 
+logging_level = 0; 
 
 # 0 = no_logging
 # 1 = few details
@@ -146,7 +146,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 							writeOffsetToFile( newFile, np.array([zStart,xStart,yStart], dtype=int32) )
 							newFile.write( bytearray( np.array(objectBoundaryChain.toarray().astype('b').flatten()) ) )
 					else:
-						if (isArrayEmpty(chains3D) != False):
+						if (isArrayEmpty(chains3D) != True):
 							writeOffsetToFile( newFile, np.array([zStart,xStart,yStart], dtype=int32) )
 							newFile.write( bytearray( np.array(chains3D, dtype=np.dtype('b')) ) )
 

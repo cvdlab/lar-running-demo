@@ -21,6 +21,7 @@ show_help() {
 	echo "-d <input images>	: Directory containing input images"
 	echo "-f <best image>		: Image to quantize on"
 	echo "-q <colors>		: Number of colors to quantize (min 2)"
+	echo "-r <colorIdx>		: Color to extract (0 to <colors - 1>)"
 	echo "-c					: Use OpenCL"
 }
 
@@ -30,7 +31,7 @@ echo "==================="
 
 USECMDLINE=0
 OPTIND=1 # Reset is necessary if getopts was used previously in the script.  It is a good idea to make this local in a function.
-while getopts "h?cud:f:q:" opt; do
+while getopts "h?cud:f:q:r:" opt; do
 	case "$opt" in
 		h|\?)
 			show_help
@@ -44,6 +45,8 @@ while getopts "h?cud:f:q:" opt; do
 			;;
 		q)  COLORS=$OPTARG
 			;;
+		r)  COLOR_SEL=$OPTARG
+			;;			
 		c)  OPENCL=0
 			;;
 	esac
@@ -69,6 +72,8 @@ if [ "$USECMDLINE" -eq "0" ]; then
 	read BESTIMAGE
 	echo -n "Number of colors to quantize (min 2) [ENTER]: "
 	read COLORS
+	echo -n "Color to extract the model (0 to colors) [ENTER]: "
+	read COLOR_SEL	
 	echo -n "Use OpenCL (y/n): "
 	read -n 1 OPENCL
 fi
@@ -91,6 +96,11 @@ if [ -z "$COLORS" ] || [ -z "${COLORS##*[!0-9]*}" ] || [ "$COLORS" -lt "2" ]; th
 	exit 1
 fi
 
+if [ -z "$COLOR_SEL" ] || [ -z "${COLOR_SEL##*[!0-9]*}" ] || [ "$COLOR_SEL" -lt "$COLORS" ]; then
+	echo "Wrong selected color index $COLOR_SEL"
+	exit 1
+fi
+
 if [ -z "$OPENCL" ] || [ "$OPENCL" != "y" ]; then
 	echo "Not using OpenCL"
 	OPENCL=0
@@ -102,7 +112,7 @@ fi
 # Empty line
 echo ""
 
-echo "Will try to extract model from $DIRINPUT/ using color quantization ($COLORS)"
+echo "Will try to extract model from $DIRINPUT/ using color quantization ($COLORS on color $COLOR_SEL)"
 echo -n "Is ok to proceed? (y/n) > "
 read -n 1 RUNSCRIPT
 echo ""
@@ -256,15 +266,15 @@ mkdir -p $COMPUTATION_DIR_BIN &> /dev/null
 
 if [ $OPENCL -eq 1 ]; then
 	echo -n "Computing input binary chains... "
-	CHAINCURR=0
-	while [ $CHAINCURR -lt $COLORS ]; do
+	CHAINCURR=$COLOR_SEL
+	#while [ $CHAINCURR -lt $COLORS ]; do
 		$PYBIN ./py/computation/step_calcchains_serial_tobinary.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output chains"
 			exit 1
 		fi
-		CHAINCURR=$((CHAINCURR + 1))
-	done
+	#	CHAINCURR=$((CHAINCURR + 1))
+	# done
 	echo -n "done!"
 	echo ""	
 	# Call OpenCL JAR
@@ -282,15 +292,15 @@ if [ $OPENCL -eq 1 ]; then
 	echo ""	
 else
 	echo -n "Computing output binary chains... "
-	CHAINCURR=0
-	while [ $CHAINCURR -lt $COLORS ]; do
+	CHAINCURR=$COLOR_SEL
+	#while [ $CHAINCURR -lt $COLORS ]; do
 		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN &> /dev/null
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output chains"
 			exit 1
 		fi
-		CHAINCURR=$((CHAINCURR + 1))
-	done
+	#	CHAINCURR=$((CHAINCURR + 1))
+	#done
 	echo -n "done!"
 	echo ""
 fi

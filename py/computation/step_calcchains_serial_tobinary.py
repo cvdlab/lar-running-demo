@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 # Logging & Timer 
 # ------------------------------------------------------------
 
-logging_level = 1; 
+logging_level = 0; 
 
 # 0 = no_logging
 # 1 = few details
