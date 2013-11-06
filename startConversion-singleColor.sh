@@ -156,7 +156,7 @@ if [ ! -d "$TMPIMGDIRECTORY" ]; then
 	exit 1
 fi
 
-cp $DIRINPUT/* $TMPIMGDIRECTORY &> /dev/null
+cp "$DIRINPUT"/* $TMPIMGDIRECTORY &> /dev/null
 
 # Convert image copied in $TMPIMGDIRECTORY
 FIRSTFILE=$(ls $TMPIMGDIRECTORY | sort -n | head -1)
@@ -330,18 +330,18 @@ STL_DIR=$TMPDIRECTORY/$STLDIR
 mkdir -p $STL_DIR &> /dev/null
 COUNTFILE=1
 echo "Converting to wavefront model ... "
-for binOut in $(ls $COMPUTATION_DIR_BIN); do
-	$PYBIN ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_y -z $BORDER_Z -i $COMPUTATION_DIR_BIN/$binOut -o $STL_DIR &> /dev/null
+for binOut in $COMPUTATION_DIR_BIN/output-*.bin; do
+	$PYBIN ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $binOut -o $STL_DIR &> /dev/null
 	if [ $? -ne 0 ]; then
-		echo "Error while converting output to binary: $genOut"
+		echo "Error while converting output to binary: $binOut"
 		exit 1
 	fi
 	
 	STL_OUT_FILE=$STL_DIR/model-$COUNTFILE.obj
 	touch $STL_OUT_FILE
-	for stlFile in $(ls $STL_DIR/*.stl); do
-		cat $STL_DIR/$stlFile >> $STL_OUT_FILE
-		rm $STL_DIR/$stlFile
+	for stlFile in $STL_DIR/*.stl; do
+		cat $stlFile >> $STL_OUT_FILE
+		rm $stlFile
 	done
 	
 	echo "Wavefront model $STL_OUT_FILE ready."
