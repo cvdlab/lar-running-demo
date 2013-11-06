@@ -51,8 +51,8 @@ def timer_stop():
 
 def readFile(V,FV,chunksize,inputFile,OUT_DIR): #outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
 	outputId = os.path.basename(inputFile).split('.')[0].split('-')[1]
-	outputVtx=OUT_DIR+"/output-a-Vtx-"+outputId+".stl"
-	outputFaces=OUT_DIR+"/output-b-Faces-"+outputId+".stl"
+	outputVtx=OUT_DIR+"/output-a-"+outputId+".stl"
+	outputFaces=OUT_DIR+"/output-b-"+outputId+".stl"
 
 	with open(inputFile, "rb") as file:
 		with open(outputVtx, "w") as fileVertex:

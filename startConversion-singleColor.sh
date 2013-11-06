@@ -288,7 +288,7 @@ if [ $OPENCL -eq 1 ]; then
 	echo -n "Computing input binary chains... "
 	CHAINCURR=$COLOR_SEL
 	#while [ $CHAINCURR -lt $COLORS ]; do
-		$PYBIN ./py/computation/step_calcchains_serial_tobinary.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
+		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output chains"
 			exit 1
@@ -300,9 +300,9 @@ if [ $OPENCL -eq 1 ]; then
 	# Call OpenCL JAR
 	# here use updated jar that outputs directly in binary in $COMPUTATION_DIR_BIN
 	echo -n "Computing output binary chains... "
-	for selettoreFile in $(ls $COMPUTATION_DIR/*.bin); do
-		selettoreId=$(echo $selettoreFile | cut -d'.' -f1 | cut -d'-' -f2)
-		LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so $JAVABIN -d64 -Xcheck:jni -Xmx14G -XX:MaxPermSize=4G -XX:PermSize=512M -jar ./java/$JARNAME -b $BORDER_DIR/$BORDER_FILE -v $COMPUTATION_DIR/$selettoreFile -w $(($BORDER_X * $BORDER_Y * $BORDER_Z)) -y $COMPUTATION_DIR_BIN/output-$selettoreId.bin
+	for selettoreFile in $COMPUTATION_DIR/selettori-*.bin; do
+		selettoreId=$(basename $selettoreFile | cut -d'.' -f1 | cut -d'-' -f2)
+		LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so $JAVABIN -d64 -Xcheck:jni -Xmx16G -XX:MaxPermSize=4G -XX:PermSize=512M -jar ./java/$JARNAME -b $BORDER_DIR/$BORDER_FILE -v $selettoreFile -y -o $COMPUTATION_DIR_BIN/output-$selettoreId.bin
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output binary chains"
 			exit 1
@@ -328,7 +328,7 @@ fi
 # stl conversion and merge
 STL_DIR=$TMPDIRECTORY/$STLDIR
 mkdir -p $STL_DIR &> /dev/null
-COUNTFILE=1
+
 echo "Converting to wavefront model ... "
 for binOut in $COMPUTATION_DIR_BIN/output-*.bin; do
 	$PYBIN ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $binOut -o $STL_DIR &> /dev/null
@@ -337,13 +337,13 @@ for binOut in $COMPUTATION_DIR_BIN/output-*.bin; do
 		exit 1
 	fi
 	
-	STL_OUT_FILE=$STL_DIR/model-$COUNTFILE.obj
+	outputId=$(basename $binOut | cut -d'.' -f1 | cut -d'-' -f2)
+	STL_OUT_FILE=$STL_DIR/model-$outputId.obj
 	touch $STL_OUT_FILE
-	for stlFile in $STL_DIR/*.stl; do
+	for stlFile in $STL_DIR/output-*-$outputId.stl; do
 		cat $stlFile >> $STL_OUT_FILE
 		rm $stlFile
 	done
 	
 	echo "Wavefront model $STL_OUT_FILE ready."
-	COUNTFILE=$((COUNTFILE + 1))
 done
