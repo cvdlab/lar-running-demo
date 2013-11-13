@@ -13,7 +13,7 @@ Every script check for its own prerequisites at the right time.
 A list of them are:
 
 * Bash
-* Python (*PyPlasm, SciPy, NumPy, pypng, simplejson or json, requests, termcolor, matplotlib*)
+* Python (*PyPlasm, SciPy, NumPy, Cython, pypng, simplejson or json, requests, termcolor, matplotlib*)
 * Java
 * OpenCL
 * Imagemagik
