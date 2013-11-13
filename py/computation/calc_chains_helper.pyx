@@ -1,7 +1,8 @@
 from cpython cimport bool
 import numpy as np
 
-cdef int addr(int x, int y, int z, int nx, int ny, int nz): return x + (nx) * (y + (ny) * (z))
+cdef int addr(int x, int y, int z, int nx, int ny, int nz): 
+	return x + (nx) * (y + (ny) * (z))
 
 def setList(int nx, int ny, int nz, int colorIdx, image,saveTheColors):
 	chains3D_old = [];

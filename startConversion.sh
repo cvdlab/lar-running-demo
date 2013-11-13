@@ -284,7 +284,7 @@ if [ $OPENCL -eq 1 ]; then
 	echo -n "Computing input binary chains... "
 	CHAINCURR=0
 	while [ $CHAINCURR -lt $COLORS ]; do
-		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR >> $LOGFILE 2>&1
+		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter_cyx.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR >> $LOGFILE 2>&1
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output chains"
 			exit 1
@@ -298,7 +298,7 @@ if [ $OPENCL -eq 1 ]; then
 	echo -n "Computing output binary chains... "
 	for selettoreFile in $COMPUTATION_DIR/selettori-*.bin; do
 		selettoreId=$(basename $selettoreFile | cut -d'.' -f1 | cut -d'-' -f2)
-		LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so $JAVABIN -d64 -Xcheck:jni -Xmx16G -XX:MaxPermSize=4G -XX:PermSize=512M -jar ./java/$JARNAME -b $BORDER_DIR/$BORDER_FILE -v $selettoreFile -y -o $COMPUTATION_DIR_BIN/output-$selettoreId.bin
+		LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so $JAVABIN -d64 -Xcheck:jni -Xmx16G -XX:MaxPermSize=4G -XX:PermSize=512M -jar ./java/$JARNAME -b $BORDER_DIR/$BORDER_FILE -v $selettoreFile -y -o $COMPUTATION_DIR_BIN/output-$selettoreId.bin >> $LOGFILE 2>&1
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output binary chains"
 			exit 1
@@ -310,7 +310,7 @@ else
 	echo -n "Computing output binary chains... "
 	CHAINCURR=0
 	while [ $CHAINCURR -lt $COLORS ]; do
-		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN >> $LOGFILE 2>&1
+		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter_cyx.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN >> $LOGFILE 2>&1
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output chains"
 			exit 1

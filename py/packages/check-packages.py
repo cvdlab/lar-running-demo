@@ -4,6 +4,7 @@ packages = []
 packages.extend(['collections', 'scipy', 'numpy', 'pyplasm', 'time']) # LAR
 packages.extend(['sys', 'logging', 'simplejson', 'json', 'requests', 'termcolor']) # mtx-accel
 packages.extend(['png', 'matplotlib', 'struct']) # pngstack
+packages.extend(['pyximport']) # cython
 packages.extend(['time', 'gc', 'os', 'traceback']) # generic
 
 def main(argv):
