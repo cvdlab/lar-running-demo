@@ -56,6 +56,15 @@ BIN_EXTENSION = ".bin"
 # Utility toolbox
 # ------------------------------------------------------------
 
+def invertIndex(nx,ny,nz):
+	nx,ny,nz = nx+1,ny+1,nz+1
+	def invertIndex0(offset):
+		a0, b0 = offset / nx, offset % nx
+		a1, b1 = a0 / ny, a0 % ny
+		a2, b2 = a1 / nz, a1 % nz
+		return b0,b1,b2
+	return invertIndex0
+	
 def countFilesInADir(directory):
 	return len(os.walk(directory).next()[2])
 	
@@ -86,7 +95,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
 	
 	with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb") as newFile:
-		for zBlock in range(imageDepth/imageDz):
+		for zBlock in xrange(imageDepth/imageDz):
 			startImage = endImage
 			endImage = startImage + imageDz
 			xEnd, yEnd = 0,0
@@ -98,8 +107,8 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 				log(1, [ "Error: colors have changed"] )
 				sys.exit(2)
 			
-			for xBlock in range(imageHeight/imageDx):
-				for yBlock in range(imageWidth/imageDy):
+			for xBlock in xrange(imageHeight/imageDx):
+				for yBlock in xrange(imageWidth/imageDy):
 					
 					xStart, yStart = xBlock * imageDx, yBlock * imageDy
 					xEnd, yEnd = xStart+imageDx, yStart+imageDy
@@ -122,15 +131,15 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 					def addr(x,y,z): return x + (nx) * (y + (ny) * (z))
 					
 					if (calculateout == True):
-						for x in range(nx):
-							for y in range(ny):
-								for z in range(nz):
+						for x in xrange(nx):
+							for y in xrange(ny):
+								for z in xrange(nz):
 									if (image[z,x,y] == saveTheColors[colorIdx]):
 										chains3D_old.append(addr(x,y,z))
 					else:
-						for x in range(nx):
-							for y in range(ny):
-								for z in range(nz):
+						for x in xrange(nx):
+							for y in xrange(ny):
+								for z in xrange(nz):
 									if (image[z,x,y] == saveTheColors[colorIdx]):
 										chains3D[addr(x,y,z)] = 1
 
@@ -233,23 +242,14 @@ def main(argv):
 		sys.exit(2)
 		
 	def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
-
-	def invertIndex(nx,ny,nz):
-		nx,ny,nz = nx+1,ny+1,nz+1
-		def invertIndex0(offset):
-			a0, b0 = offset / nx, offset % nx
-			a1, b1 = a0 / ny, a0 % ny
-			a2, b2 = a1 / nz, a1 % nz
-			return b0,b1,b2
-		return invertIndex0
 	
 	chunksize = nx * ny + nx * nz + ny * nz + 3 * nx * ny * nz
-	V = [[x,y,z] for z in range(nz+1) for y in range(ny+1) for x in range(nx+1) ]
+	V = [[x,y,z] for z in xrange(nz+1) for y in xrange(ny+1) for x in xrange(nx+1) ]
 	
 	v2coords = invertIndex(nx,ny,nz)
 
 	FV = []
-	for h in range(len(V)):
+	for h in xrange(len(V)):
 		x,y,z = v2coords(h)
 		if (x < nx) and (y < ny): FV.append([h,ind(x+1,y,z),ind(x,y+1,z),ind(x+1,y+1,z)])
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])

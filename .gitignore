@@ -8,6 +8,7 @@
 
 # Dir
 tmp/
+log/
 
 #
 !/java/*.jar

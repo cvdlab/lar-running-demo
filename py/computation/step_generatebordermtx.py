@@ -47,6 +47,15 @@ def timer_stop():
 # Computation of ∂3 operator on the image space
 # ------------------------------------------------------------
 
+def invertIndex(nx,ny,nz):
+	nx,ny,nz = nx+1,ny+1,nz+1
+	def invertIndex0(offset):
+		a0, b0 = offset / nx, offset % nx
+		a1, b1 = a0 / ny, a0 % ny
+		a2, b2 = a1 / nz, a1 % nz
+		return b0,b1,b2
+	return invertIndex0
+	
 def computeBordo3(FV,CV,inputFile='bordo3.json'):
 	log(1, ["bordo3 = Starting"])
 	bordo3 = larBoundary(FV,CV)
@@ -96,15 +105,6 @@ def main(argv):
 	log(1, ["nx, ny, nz = " + str(nx) + "," + str(ny) + "," + str(nz)]);
 	
 	def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
-
-	def invertIndex(nx,ny,nz):
-		nx,ny,nz = nx+1,ny+1,nz+1
-		def invertIndex0(offset):
-			a0, b0 = offset / nx, offset % nx
-			a1, b1 = a0 / ny, a0 % ny
-			a2, b2 = a1 / nz, a1 % nz
-			return b0,b1,b2
-		return invertIndex0
 		
 	def the3Dcell(coords):
 		x,y,z = coords
@@ -114,14 +114,14 @@ def main(argv):
 	# Construction of vertex coordinates (nx * ny * nz)
 	# ------------------------------------------------------------
 
-	V = [[x,y,z] for z in range(nz+1) for y in range(ny+1) for x in range(nx+1) ]
+	V = [[x,y,z] for z in xrange(nz+1) for y in xrange(ny+1) for x in xrange(nx+1) ]
 
 	log(3, ["V = " + str(V)]);
 
 	# Construction of CV relation (nx * ny * nz)
 	# ------------------------------------------------------------
 
-	CV = [the3Dcell([x,y,z]) for z in range(nz) for y in range(ny) for x in range(nx)]
+	CV = [the3Dcell([x,y,z]) for z in xrange(nz) for y in xrange(ny) for x in xrange(nx)]
 
 	log(3, ["CV = " + str(CV)]);
 
@@ -132,7 +132,7 @@ def main(argv):
 
 	v2coords = invertIndex(nx,ny,nz)
 
-	for h in range(len(V)):
+	for h in xrange(len(V)):
 		x,y,z = v2coords(h)
 		if (x < nx) and (y < ny): FV.append([h,ind(x+1,y,z),ind(x,y+1,z),ind(x+1,y+1,z)])
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])

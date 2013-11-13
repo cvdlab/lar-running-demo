@@ -45,9 +45,14 @@ def timer_stop():
 
 # ------------------------------------------------------------
 
-# inputFile = output.bin
-# outputVtx = outputVtx.obj
-# outputFaces = outputFaces.obj
+def invertIndex(nx,ny,nz):
+	nx,ny,nz = nx+1,ny+1,nz+1
+	def invertIndex0(offset):
+		a0, b0 = offset / nx, offset % nx
+		a1, b1 = a0 / ny, a0 % ny
+		a2, b2 = a1 / nz, a1 % nz
+		return b0,b1,b2
+	return invertIndex0
 
 def readFile(V,FV,chunksize,inputFile,OUT_DIR): #outputVtx="outputVtx.obj",outputFaces="outputFaces.obj"):
 	outputId = os.path.basename(inputFile).split('.')[0].split('-')[1]
@@ -173,23 +178,14 @@ def main(argv):
 		sys.exit(2)
 		
 	def ind(x,y,z): return x + (nx+1) * (y + (ny+1) * (z))
-
-	def invertIndex(nx,ny,nz):
-		nx,ny,nz = nx+1,ny+1,nz+1
-		def invertIndex0(offset):
-			a0, b0 = offset / nx, offset % nx
-			a1, b1 = a0 / ny, a0 % ny
-			a2, b2 = a1 / nz, a1 % nz
-			return b0,b1,b2
-		return invertIndex0
 	
 	chunksize = nx * ny + nx * nz + ny * nz + 3 * nx * ny * nz
-	V = [[x,y,z] for z in range(nz+1) for y in range(ny+1) for x in range(nx+1) ]
+	V = [[x,y,z] for z in xrange(nz+1) for y in xrange(ny+1) for x in xrange(nx+1) ]
 	
 	v2coords = invertIndex(nx,ny,nz)
 
 	FV = []
-	for h in range(len(V)):
+	for h in xrange(len(V)):
 		x,y,z = v2coords(h)
 		if (x < nx) and (y < ny): FV.append([h,ind(x+1,y,z),ind(x,y+1,z),ind(x+1,y+1,z)])
 		if (x < nx) and (z < nz): FV.append([h,ind(x+1,y,z),ind(x,y,z+1),ind(x+1,y,z+1)])

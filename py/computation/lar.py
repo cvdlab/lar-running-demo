@@ -241,7 +241,7 @@ def csrToMatrixRepresentation(CSRm):
 def csrToBrc(CSRm):
     nrows = csrGetNumberOfRows(CSRm)
     C = CSRm.tocoo()
-    out = [[] for i in range (nrows)]
+    out = [[] for i in xrange (nrows)]
     [out[i].append(j) for i,j in zip(C.row,C.col)]
     return out
 
@@ -291,40 +291,45 @@ def csrSplitByColumn(CSRm,k):
 #------------------------------------------------------------------
 
 def csrBoundaryFilter(CSRm, facetLengths):
-    
-    maxs = [max(CSRm[k].data) for k in range(CSRm.shape[0])]
-    inputShape = CSRm.shape
-    
-    coo = CSRm.tocoo()
+	maxs = [max(CSRm[k].data) for k in xrange(CSRm.shape[0])]
+	inputShape = CSRm.shape
 
-    row = [] # np.array([]).astype(np.int32);
-    col = [] # np.array([]).astype(np.int32);
+	coo = CSRm.tocoo()
+
+	row = [] # np.array([]).astype(np.int32);
+	col = [] # np.array([]).astype(np.int32);
     # data = [] # np.array([]).astype(np.int32);
 
-    for k in range(len(coo.data)):      
-        if coo.data[k] == maxs[coo.row[k]]:
-            row.append(coo.row[k])
-            col.append(coo.col[k])
-            # data.append(1)
+	k = 0
+	while (k < len(coo.data)):      
+		if coo.data[k] == maxs[coo.row[k]]:
+			row.append(coo.row[k])
+			col.append(coo.col[k])
+		k += 1
     
-    data = np.ones(len(col),dtype=np.int32);
-    mtx = coo_matrix( (data, ( np.array(row).astype(np.int32), np.array(col).astype(np.int32) )), shape=inputShape)
+	data = np.ones(len(col),dtype=np.int32);
+	mtx = coo_matrix( (data, ( np.array(row).astype(np.int32), np.array(col).astype(np.int32) )), shape=inputShape)
 
-    out = mtx.tocsr()
-    return out
+	out = mtx.tocsr()
+	return out
 
 #------------------------------------------------------------------
 def csrBinFilter(CSRm):
     # can be done in parallel (by rows)
-    inputShape = CSRm.shape
-    coo = CSRm.tocoo()
-    for k in range(len(coo.data)):
-        if coo.data[k] % 2 == 1: coo.data[k] = 1
-        else: coo.data[k] = 0
+	inputShape = CSRm.shape
+	coo = CSRm.tocoo()
+    
+	k = 0
+	while (k < len(coo.data)):
+		if (coo.data[k] % 2 == 1): 
+			coo.data[k] = 1
+		else: 
+			coo.data[k] = 0
+		k += 1
     #mtx = coo_matrix((coo.data, (coo.row, coo.col)), shape=inputShape)
     #out = mtx.tocsr()
     #return out
-    return coo.tocsr()
+	return coo.tocsr()
 
 #------------------------------------------------------------------
 def csrPredFilter(CSRm, pred):
@@ -354,7 +359,7 @@ def csrCreateUnitChain(kn,k):
 #------------------------------------------------------------------
 def csrExtractAllGenerators(CSRm):
     listOfListOfNumerals = [csrTranspose(CSRm)[k].tocoo().col.tolist()
-                            for k in range(CSRm.shape[1])]
+                            for k in xrange(CSRm.shape[1])]
     return listOfListOfNumerals
 
 #------------------------------------------------------------------
@@ -454,10 +459,10 @@ def larExtrude(model,pattern):
     outcells = []
     for cell in FV:
         # create the indices of vertices in the cell "tube"
-        tube = [v + k*offset for k in range(m+1) for v in cell]
+        tube = [v + k*offset for k in xrange(m+1) for v in cell]
         # take groups of d+1 elements, via shifting by one
         rangelimit = len(tube)-d
-        cellTube = [tube[k:k+d+1] for k in range(rangelimit)]
+        cellTube = [tube[k:k+d+1] for k in xrange(rangelimit)]
         outcells += [scipy.reshape(cellTube,newshape=(m,d,d+1)).tolist()]
     outcells = AA(CAT)(TRANS(outcells))
     outcells = [group for k,group in enumerate(outcells) if pattern[k]>0 ]
@@ -492,7 +497,7 @@ def larFacets(model,dim=3):
     V,cells,csr,csrAdjSquareMat = setup(model,dim)
     cellFacets = []
     # for each input cell i
-    for i in range(len(cells)):
+    for i in xrange(len(cells)):
         adjCells = csrAdjSquareMat[i].tocoo()
         cell1 = csr[i].tocoo().col
         pairs = zip(adjCells.col,adjCells.data)
@@ -516,7 +521,7 @@ def larSkeletons (model,dim=3):
         """
     faces = []
     faces.append(model[1])
-    for p in range(dim,0,-1):
+    for p in xrange(dim,0,-1):
         model = larFacets(model,dim=p)
         faces.append(model[1])
     return model[0], REVERSE(faces)
@@ -529,7 +534,7 @@ def boundarGrid(model,minPoint,maxPoint):
         """
     dim = len(minPoint)
     # boundary points extraction
-    outerCells = [[] for k in range(2*dim)]
+    outerCells = [[] for k in xrange(2*dim)]
     for n,point in enumerate(model[0]):
         for h,coord in enumerate(point):
             if coord == minPoint[h]: outerCells[h].append(n)
