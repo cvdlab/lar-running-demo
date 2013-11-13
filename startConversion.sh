@@ -14,6 +14,12 @@ STLDIR="stl"
 # ****
 chmod 0755 ./sh/*.sh
 # ****
+# LOGGING
+LOGDIR=$WORKINDIR/log
+LOGFILE=$LOGDIR/executionLog-$DATE
+mkdir -p $LOGDIR
+touch $LOGFILE
+######
 
 show_help() {
 	echo "Either run without args or with"
@@ -129,8 +135,8 @@ TMPDIRECTORY=$WORKINDIR/$TMPNAME/$(date | md5sum | head -c${1:-32})
 echo "Using tmp directory $TMPDIRECTORY"
 
 # Create clean dir
-rm -fr $TMPDIRECTORY &> /dev/null
-mkdir -p $TMPDIRECTORY &> /dev/null
+rm -fr $TMPDIRECTORY >> $LOGFILE 2>&1
+mkdir -p $TMPDIRECTORY >> $LOGFILE 2>&1
 
 if [ ! -d "$TMPDIRECTORY" ]; then
 	echo "Could not create $TMPDIRECTORY. Aborting!"
@@ -139,14 +145,14 @@ fi
 
 # Copy images to tmpimgdir
 TMPIMGDIRECTORY=$TMPDIRECTORY/$IMGDIRNAME
-mkdir -p $TMPIMGDIRECTORY &> /dev/null
+mkdir -p $TMPIMGDIRECTORY >> $LOGFILE 2>&1
 
 if [ ! -d "$TMPIMGDIRECTORY" ]; then
 	echo "Could not create $TMPIMGDIRECTORY Aborting!"
 	exit 1
 fi
 
-cp "$DIRINPUT"/* $TMPIMGDIRECTORY &> /dev/null
+cp "$DIRINPUT"/* $TMPIMGDIRECTORY >> $LOGFILE 2>&1
 
 # Convert image copied in $TMPIMGDIRECTORY
 FIRSTFILE=$(ls $TMPIMGDIRECTORY | sort -n | head -1)
@@ -187,7 +193,7 @@ elif [ "$EXTFILE" == "dcm" ]; then
 	done
 else
 	echo "Unknown file extension: $EXTFILE"
-	rm -fr $TMPDIRECTORY &> /dev/null
+	rm -fr $TMPDIRECTORY >> $LOGFILE 2>&1
 	exit 1
 fi
 
@@ -250,11 +256,11 @@ echo "Using border operator size $BORDER_X x $BORDER_Y x $BORDER_Z"
 # Check if border file exist already? where? (our dir), else call py step_bordercreate
 BORDER_DIR=$WORKINDIR/$TMPNAME/$BORDERDIRNAME
 BORDER_FILE="bordo3_$BORDER_X-$BORDER_Y-$BORDER_Z.json"
-mkdir -p $BORDER_DIR &> /dev/null
+mkdir -p $BORDER_DIR >> $LOGFILE 2>&1
 
 if [ ! -r $BORDER_DIR/$BORDER_FILE ]; then
 	echo -n "Generating border matrix ... "
-	$PYBIN ./py/computation/step_generatebordermtx.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -o $BORDER_DIR &> /dev/null
+	$PYBIN ./py/computation/step_generatebordermtx.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -o $BORDER_DIR >> $LOGFILE 2>&1
 	if [ $? -ne 0 ]; then
 		echo -n "Error while generating $BORDER_DIR/$BORDER_FILE. Exiting."
 		exit 1
@@ -269,16 +275,16 @@ echo ""
 
 # Call chain computer. if opencl is diabled, enable computation of output
 COMPUTATION_DIR=$TMPDIRECTORY/$COMPDIR
-mkdir -p $COMPUTATION_DIR &> /dev/null
+mkdir -p $COMPUTATION_DIR >> $LOGFILE 2>&1
 
 COMPUTATION_DIR_BIN=$TMPDIRECTORY/$COMPDIRBIN
-mkdir -p $COMPUTATION_DIR_BIN &> /dev/null
+mkdir -p $COMPUTATION_DIR_BIN >> $LOGFILE 2>&1
 
 if [ $OPENCL -eq 1 ]; then
 	echo -n "Computing input binary chains... "
 	CHAINCURR=0
 	while [ $CHAINCURR -lt $COLORS ]; do
-		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR &> /dev/null
+		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR >> $LOGFILE 2>&1
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output chains"
 			exit 1
@@ -304,7 +310,7 @@ else
 	echo -n "Computing output binary chains... "
 	CHAINCURR=0
 	while [ $CHAINCURR -lt $COLORS ]; do
-		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN &> /dev/null
+		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN >> $LOGFILE 2>&1
 		if [ $? -ne 0 ]; then
 			echo "Error while computing output chains"
 			exit 1
@@ -317,11 +323,11 @@ fi
 
 # stl conversion and merge
 STL_DIR=$TMPDIRECTORY/$STLDIR
-mkdir -p $STL_DIR &> /dev/null
+mkdir -p $STL_DIR >> $LOGFILE 2>&1
 
 echo "Converting to wavefront model ... "
 for binOut in $COMPUTATION_DIR_BIN/output-*.bin; do
-	$PYBIN ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $binOut -o $STL_DIR &> /dev/null
+	$PYBIN ./py/computation/step_triangularmesh.py -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $binOut -o $STL_DIR >> $LOGFILE 2>&1
 	if [ $? -ne 0 ]; then
 		echo "Error while converting output to binary: $binOut"
 		exit 1
