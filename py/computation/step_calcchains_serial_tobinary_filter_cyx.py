@@ -92,7 +92,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 		fileName = "output-"
 	
 	saveTheColors = centroidsCalc
-	saveTheColors = sorted(saveTheColors.reshape(1,colors)[0])
+	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )
 	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
 	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
@@ -104,10 +104,10 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 			xEnd, yEnd = 0,0
 			theImage,colors,theColors = pngstack2array3d(INPUT_DIR, startImage, endImage, colors, pixelCalc, centroidsCalc)
 			
-			theColors = theColors.reshape(1,colors)
-			if (sorted(theColors[0]) != saveTheColors):
-				log(1, [ "Error: colors have changed"] )
-				sys.exit(2)
+			# theColors = theColors.reshape(1,colors)
+			# if (sorted(theColors[0]) != saveTheColors):
+			#	log(1, [ "Error: colors have changed"] )
+			#	sys.exit(2)
 			
 			for xBlock in xrange(imageHeight/imageDx):
 				for yBlock in xrange(imageWidth/imageDy):
