@@ -69,26 +69,6 @@ def setParallelListNP(int nx, int ny, int nz, int colorIdx, np.ndarray[np.uint8_
 		hasSomeOne = True
 		
 	return hasSomeOne,chains3D
-	
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-def setGParallelListNP(int nx, int ny, int nz, int colorIdx, np.ndarray[np.uint8_t, ndim=3] image, np.ndarray[np.int_t, ndim=1] saveTheColors, int nThreads=4):
-	cdef bool hasSomeOne = False
-	cdef np.ndarray[np.int32_t, ndim=1] chains3D = np.zeros(nx*ny*nz, dtype=np.int32)
-	
-	cdef Py_ssize_t x
-	cdef Py_ssize_t cx = nx
-	
-	for x in prange(cx, nogil=True, schedule='guided', num_threads=nThreads):
-		with gil:
-			for y in xrange(ny):
-				for z in xrange(nz):
-					if (image[z,x,y] == saveTheColors[colorIdx]):
-						hasSomeOne = True
-						chains3D[addr(x,y,z,nx,ny,nz)] = 1
-	
-	return hasSomeOne,chains3D
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

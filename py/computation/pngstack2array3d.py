@@ -91,7 +91,7 @@ def pngstack2array3d(path, MIN_SLICE, MAX_SLICE, colors, pixel, centroids):
 	# -----------------------------------------------------------------------------
 	# -----------------------------------------------------------------------------
 
-	for page in range(image3d.shape[0]):
+	for page in xrange(image3d.shape[0]):
 
 		# image denoising 
 		# -------------------------------------------------------------------------
