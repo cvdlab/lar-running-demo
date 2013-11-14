@@ -133,6 +133,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 						chains3D_old = cch.setList(nx,ny,nz, colorIdx, image,saveTheColors)
 					else:
 						hasSomeOne,chains3D = cch.setListNP(nx,ny,nz, colorIdx, image,saveTheColors)
+						# hasSomeOne,chains3D = cch.setParallelListNP(nx,ny,nz, colorIdx, image,saveTheColors)
 
 					# Compute the boundary complex of the quotient cell
 					# ------------------------------------------------------------
