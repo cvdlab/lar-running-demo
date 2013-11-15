@@ -14,16 +14,15 @@ import traceback
 #
 import matplotlib.pyplot as plt
 # threading
-import thread
 import multiprocessing
-from threading import Thread
+from multiprocessing import Process, Value, Lock
 from Queue import Queue
 
 # ------------------------------------------------------------
 # Logging & Timer 
 # ------------------------------------------------------------
 
-logging_level = 0; 
+logging_level = 2; 
 
 # 0 = no_logging
 # 1 = few details
@@ -82,36 +81,7 @@ def writeOffsetToFile(file, offsetCurr):
 	file.write( struct.pack('>I', offsetCurr[1]) )
 	file.write( struct.pack('>I', offsetCurr[2]) )
 # ------------------------------------------------------------
-
-class Worker(Thread):
-    """Thread executing tasks from a given tasks queue"""
-    def __init__(self, tasks):
-        Thread.__init__(self)
-        self.tasks = tasks
-        self.daemon = True
-        self.start()
-    
-    def run(self):
-        while True:
-            func, args, kargs = self.tasks.get()
-            try: func(*args, **kargs)
-            except Exception, e: print e
-            self.tasks.task_done()
-
-class ThreadPool:
-    """Pool of threads consuming tasks from a queue"""
-    def __init__(self, num_threads):
-        self.tasks = Queue(num_threads)
-        for _ in range(num_threads): Worker(self.tasks)
-
-    def add_task(self, func, *args, **kargs):
-        """Add a task to the queue"""
-        self.tasks.put((func, args, kargs))
-
-    def wait_completion(self):
-        """Wait for completion of all the tasks in the queue"""
-        self.tasks.join()
-# ------------------------------------------------------------
+computeMutex = Lock()
 
 def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx, imageDir, fileToWrite, computeMutex):
 	print "Working task: " +str(startImage) + "-" + str(endImage) + " [" + str( imageHeight) + "-" + str( imageWidth ) + "-" + str(imageDx) + "-" + str( imageDy) + "-" + str (imageDz) + "]"
@@ -212,27 +182,28 @@ def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageD
 	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
 
-	computeMutex = thread.allocate_lock()
-	processPool = max(1, multiprocessing.cpu_count()/4)
+	processPool = max(1, multiprocessing.cpu_count()/2)
 	print "Starting pool with: " + str(processPool)
 
-	pool = ThreadPool(processPool)
-	with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb+") as newFile:
-		print 'Start pool'
-		try:
+	try:
+		pool = multiprocessing.Pool(processPool)
+		with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb+") as newFile:
+			print 'Start pool'
+		
 			for j in xrange(imageDepth/imageDz):
 				startImage = endImage
 				endImage = startImage + imageDz
 				print "Added task: " + str(j) + " -- (" + str(startImage) + "," + str(endImage) + ")"
-				pool.add_task(computeChainsThread, startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,newFile,computeMutex)
+				pool.apply_async(computeChainsThread, args = (startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,newFile, ))
 
 			print "Waiting for completion..."
-			pool.wait_completion()
-		except:
-			exc_type, exc_value, exc_traceback = sys.exc_info()
-			lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-			log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
-			sys.exit(2)		
+			pool.close()
+			pool.join()
+	except:
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
+		sys.exit(2)		
 
 
 def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
@@ -253,6 +224,7 @@ def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, 
 	Nx,Ny,Nz = imageHeight/imageDx, imageWidth/imageDx, imageDepth/imageDz
 	try:
 		pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
+		print "Compute chains"
 		startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, coloridx,INPUT_DIR,DIR_O)
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
