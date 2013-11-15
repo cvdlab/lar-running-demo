@@ -86,7 +86,7 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
 	
 	with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb") as newFile:
-		for zBlock in range(imageDepth/imageDz):
+		for zBlock in xrange(imageDepth/imageDz):
 			startImage = endImage
 			endImage = startImage + imageDz
 			xEnd, yEnd = 0,0
@@ -97,8 +97,8 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 				log(1, [ "Error: colors have changed"] )
 				sys.exit(2)
 			
-			for xBlock in range(imageHeight/imageDx):
-				for yBlock in range(imageWidth/imageDy):
+			for xBlock in xrange(imageHeight/imageDx):
+				for yBlock in xrange(imageWidth/imageDy):
 					
 					xStart, yStart = xBlock * imageDx, yBlock * imageDy
 					xEnd, yEnd = xStart+imageDx, yStart+imageDy
@@ -122,15 +122,15 @@ def computeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx
 					
 					hasSomeOne = False
 					if (calculateout == True):
-						for x in range(nx):
-							for y in range(ny):
-								for z in range(nz):
+						for x in xrange(nx):
+							for y in xrange(ny):
+								for z in xrange(nz):
 									if (image[z,x,y] == saveTheColors[colorIdx]):
 										chains3D_old.append(addr(x,y,z))
 					else:
-						for x in range(nx):
-							for y in range(ny):
-								for z in range(nz):
+						for x in xrange(nx):
+							for y in xrange(ny):
+								for z in xrange(nz):
 									if (image[z,x,y] == saveTheColors[colorIdx]):
 										hasSomeOne = True
 										chains3D[addr(x,y,z)] = 1
