@@ -15,6 +15,7 @@ import traceback
 import matplotlib.pyplot as plt
 # threading
 import thread
+import multiprocessing
 from threading import Thread
 from Queue import Queue
 
@@ -82,8 +83,6 @@ def writeOffsetToFile(file, offsetCurr):
 	file.write( struct.pack('>I', offsetCurr[2]) )
 # ------------------------------------------------------------
 
-computeMutex = thread.allocate_lock()
-
 class Worker(Thread):
     """Thread executing tasks from a given tasks queue"""
     def __init__(self, tasks):
@@ -114,10 +113,8 @@ class ThreadPool:
         self.tasks.join()
 # ------------------------------------------------------------
 
-
-
-def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx, imageDir, fileToWrite):
-	print "Working task: " +str(startImage) + "-" + str(endImage) + " [" + str( fileToWrite.fileno() ) + "]"
+def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx, imageDir, fileToWrite, computeMutex):
+	print "Working task: " +str(startImage) + "-" + str(endImage) + " [" + str( imageHeight) + "-" + str( imageWidth ) + "-" + str(imageDx) + "-" + str( imageDy) + "-" + str (imageDz) + "]"
 	
 	xEnd, yEnd = 0,0
 	beginImageStack = 0
@@ -125,15 +122,18 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )
 
 	try:
+		print "Working task: " +str(startImage) + "-" + str(endImage) + " [loading colors]"
 		theImage,colors,theColors = pngstack2array3d(imageDir, startImage, endImage, colors, pixelCalc, centroidsCalc)		
 		# theColors = theColors.reshape(1,colors)
 		# if (sorted(theColors[0]) != saveTheColors):
 		#	log(1, [ "Error: colors have changed"] )
 		#	sys.exit(2)
-				
+		
+		print "Working task: " +str(startImage) + "-" + str(endImage) + " [comp loop]"
 		for xBlock in xrange(imageHeight/imageDx):
+			# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Xblock]"
 			for yBlock in xrange(imageWidth/imageDy):
-						
+				# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Yblock]"
 				xStart, yStart = xBlock * imageDx, yBlock * imageDy
 				xEnd, yEnd = xStart+imageDx, yStart+imageDy
 						
@@ -146,6 +146,8 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 				chains3D_old = [];
 				chains3D = None
 				hasSomeOne = False
+				if (calculateout != True):
+					chains3D = np.zeros(nx*ny*nz, dtype=np.int32)
 						
 				zStart = startImage - beginImageStack;
 
@@ -164,8 +166,9 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 								if (image[z,x,y] == saveTheColors[colorIdx]):
 									hasSomeOne = True
 									chains3D[addr(x,y,z)] = 1
-					# hasSomeOne,chains3D = cch.setParallelListNP(nx,ny,nz, colorIdx, image,saveTheColors)
-
+					
+					# print "Working task: " +str(startImage) + "-" + str(endImage) + " [hasSomeOne: " + str(hasSomeOne) +"]"
+					
 				# Compute the boundary complex of the quotient cell
 				# ------------------------------------------------------------
 				objectBoundaryChain = None
@@ -175,15 +178,17 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 				# Save
 				if (calculateout == True):
 					if (objectBoundaryChain != None):
+						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing]"
 						computeMutex.acquire()
-						print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing]"
+						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing INLOCK]"
 						writeOffsetToFile( fileToWrite, np.array([zStart,xStart,yStart], dtype=int32) )
 						fileToWrite.write( bytearray( np.array(objectBoundaryChain.toarray().astype('b').flatten()) ) )
 						computeMutex.release()
 				else:
 					if (hasSomeOne != False):
+						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing]"
 						computeMutex.acquire()
-						print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing]"
+						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing INLOCK]"
 						writeOffsetToFile( fileToWrite, np.array([zStart,xStart,yStart], dtype=int32) )
 						fileToWrite.write( bytearray( np.array(chains3D, dtype=np.dtype('b')) ) )
 						computeMutex.release()
@@ -206,32 +211,28 @@ def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageD
 	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
 	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
-	
-	'''
-	threads = []
-	
-	with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb") as newFile:
-		for j in xrange(imageDepth/imageDz):
-			startImage = endImage
-			endImage = startImage + imageDz
-			current = computeThread(startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,newFile)
-			# Start thread
-			threads.append(current)
-			current.start()
-			
-		for t in threads:
-			t.join()
-	'''
-	pool = ThreadPool(4)
-	with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb") as newFile:
-		print 'Start pool'
-		for j in xrange(imageDepth/imageDz):
-			startImage = endImage
-			endImage = startImage + imageDz
-			print "Added tasks " + str(j) + " -- (" + str(startImage) + "," + str(endImage) + ")"
-			pool.add_task(computeChainsThread, startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,newFile)
 
-		pool.wait_completion()
+	computeMutex = thread.allocate_lock()
+	processPool = max(1, multiprocessing.cpu_count()/4)
+	print "Starting pool with: " + str(processPool)
+
+	pool = ThreadPool(processPool)
+	with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb+") as newFile:
+		print 'Start pool'
+		try:
+			for j in xrange(imageDepth/imageDz):
+				startImage = endImage
+				endImage = startImage + imageDz
+				print "Added task: " + str(j) + " -- (" + str(startImage) + "," + str(endImage) + ")"
+				pool.add_task(computeChainsThread, startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,newFile,computeMutex)
+
+			print "Waiting for completion..."
+			pool.wait_completion()
+		except:
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+			log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
+			sys.exit(2)		
 
 
 def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
