@@ -289,6 +289,13 @@ if [ $OPENCL -eq 1 ]; then
 			echo "Error while computing output chains"
 			exit 1
 		fi
+		# Merge selectors
+		for pSelettore in $COMPUTATION_DIR_BIN/pselettori*.bin; do
+			colorId=$(basename $pOutput | cut -d'.' -f1 | cut -d'-' -f3)
+			cat $pOutput >> $COMPUTATION_DIR_BIN/selettori-$colorId.bin
+			rm -f $pOutput >> $LOGFILE 2>&1
+		done
+		# Next chain
 		CHAINCURR=$((CHAINCURR + 1))
 	done
 	echo -n "done!"
@@ -315,6 +322,13 @@ else
 			echo "Error while computing output chains"
 			exit 1
 		fi
+		# Merge output
+		for pOutput in $COMPUTATION_DIR_BIN/poutput*.bin; do
+			colorId=$(basename $pOutput | cut -d'.' -f1 | cut -d'-' -f3)
+			cat $pOutput >> $COMPUTATION_DIR_BIN/output-$colorId.bin
+			rm -f $pOutput >> $LOGFILE 2>&1
+		done
+		# Next chain
 		CHAINCURR=$((CHAINCURR + 1))
 	done
 	echo -n "done!"

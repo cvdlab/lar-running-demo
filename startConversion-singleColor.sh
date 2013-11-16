@@ -294,14 +294,17 @@ mkdir -p $COMPUTATION_DIR_BIN >> $LOGFILE 2>&1
 if [ $OPENCL -eq 1 ]; then
 	echo -n "Computing input binary chains... "
 	CHAINCURR=$COLOR_SEL
-	#while [ $CHAINCURR -lt $COLORS ]; do
-		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter_cyx.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR >> $LOGFILE 2>&1
-		if [ $? -ne 0 ]; then
-			echo "Error while computing output chains"
-			exit 1
-		fi
-	#	CHAINCURR=$((CHAINCURR + 1))
-	# done
+	$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter_proc.py -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then
+		echo "Error while computing output chains"
+		exit 1
+	fi
+	# Merge selectors
+	for pSelettore in $COMPUTATION_DIR_BIN/pselettori*.bin; do
+		colorId=$(basename $pOutput | cut -d'.' -f1 | cut -d'-' -f3)
+		cat $pOutput >> $COMPUTATION_DIR_BIN/selettori-$colorId.bin
+		rm -f $pOutput >> $LOGFILE 2>&1
+	done
 	echo -n "done!"
 	echo ""	
 	# Call OpenCL JAR
@@ -320,14 +323,17 @@ if [ $OPENCL -eq 1 ]; then
 else
 	echo -n "Computing output binary chains... "
 	CHAINCURR=$COLOR_SEL
-	#while [ $CHAINCURR -lt $COLORS ]; do
-		$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter_cyx.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN >> $LOGFILE 2>&1
-		if [ $? -ne 0 ]; then
-			echo "Error while computing output chains"
-			exit 1
-		fi
-	#	CHAINCURR=$((CHAINCURR + 1))
-	#done
+	$PYBIN ./py/computation/step_calcchains_serial_tobinary_filter_proc.py -r -b $BORDER_DIR/$BORDER_FILE -x $BORDER_X -y $BORDER_Y -z $BORDER_Z -i $TMPIMGDIRECTORY -c $COLORS -d $CHAINCURR -q $BESTFILE -o $COMPUTATION_DIR_BIN >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then
+		echo "Error while computing output chains"
+		exit 1
+	fi
+	# Merge output
+	for pOutput in $COMPUTATION_DIR_BIN/poutput*.bin; do
+		colorId=$(basename $pOutput | cut -d'.' -f1 | cut -d'-' -f3)
+		cat $pOutput >> $COMPUTATION_DIR_BIN/output-$colorId.bin
+		rm -f $pOutput >> $LOGFILE 2>&1
+	done
 	echo -n "done!"
 	echo ""
 fi

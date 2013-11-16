@@ -17,6 +17,9 @@ import matplotlib.pyplot as plt
 import multiprocessing
 from multiprocessing import Process, Value, Lock
 from Queue import Queue
+# cython stuf. not used now
+# import pyximport; pyximport.install()
+# import calc_chains_helper as cch
 
 # ------------------------------------------------------------
 # Logging & Timer 
@@ -33,21 +36,6 @@ def log(n, l):
 	if __name__=="__main__" and n <= logging_level:
 		for s in l:
 			print "Log:", s;
-
-timer = 1;
-
-timer_last =  tm.time()
-
-def timer_start(s):
-	global timer_last;
-	if __name__=="__main__" and timer == 1:   
-		log(3, ["Timer start:" + s]);
-	timer_last = tm.time();
-
-def timer_stop():
-	global timer_last;
-	if __name__=="__main__" and timer == 1:   
-		log(3, ["Timer stop :" + str(tm.time() - timer_last)]);
 
 # ------------------------------------------------------------
 # Configuration parameters
@@ -81,132 +69,10 @@ def writeOffsetToFile(file, offsetCurr):
 	file.write( struct.pack('>I', offsetCurr[1]) )
 	file.write( struct.pack('>I', offsetCurr[2]) )
 # ------------------------------------------------------------
-computeMutex = Lock()
 
-def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx, imageDir, fileToWrite, computeMutex):
-	print "Working task: " +str(startImage) + "-" + str(endImage) + " [" + str( imageHeight) + "-" + str( imageWidth ) + "-" + str(imageDx) + "-" + str( imageDy) + "-" + str (imageDz) + "]"
+def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,BORDER_FILE, colors,pixelCalc,centroidsCalc, colorIdx, imageDir, DIR_O):
+	log(2, [ "Working task: " +str(startImage) + "-" + str(endImage) + " [" + str( imageHeight) + "-" + str( imageWidth ) + "-" + str(imageDx) + "-" + str( imageDy) + "-" + str (imageDz) + "]" ])
 	
-	xEnd, yEnd = 0,0
-	beginImageStack = 0
-	saveTheColors = centroidsCalc
-	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )
-
-	try:
-		print "Working task: " +str(startImage) + "-" + str(endImage) + " [loading colors]"
-		theImage,colors,theColors = pngstack2array3d(imageDir, startImage, endImage, colors, pixelCalc, centroidsCalc)		
-		# theColors = theColors.reshape(1,colors)
-		# if (sorted(theColors[0]) != saveTheColors):
-		#	log(1, [ "Error: colors have changed"] )
-		#	sys.exit(2)
-		
-		print "Working task: " +str(startImage) + "-" + str(endImage) + " [comp loop]"
-		for xBlock in xrange(imageHeight/imageDx):
-			# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Xblock]"
-			for yBlock in xrange(imageWidth/imageDy):
-				# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Yblock]"
-				xStart, yStart = xBlock * imageDx, yBlock * imageDy
-				xEnd, yEnd = xStart+imageDx, yStart+imageDy
-						
-				image = theImage[:, xStart:xEnd, yStart:yEnd]
-				nz,nx,ny = image.shape
-
-				# Compute a quotient complex of chains with constant field
-				# ------------------------------------------------------------
-
-				chains3D_old = [];
-				chains3D = None
-				hasSomeOne = False
-				if (calculateout != True):
-					chains3D = np.zeros(nx*ny*nz, dtype=np.int32)
-						
-				zStart = startImage - beginImageStack;
-
-				def addr(x,y,z): return x + (nx) * (y + (ny) * (z))
-						
-				if (calculateout == True):
-					for x in xrange(nx):
-						for y in xrange(ny):
-							for z in xrange(nz):
-								if (image[z,x,y] == saveTheColors[colorIdx]):
-									chains3D_old.append(addr(x,y,z))
-				else:
-					for x in xrange(nx):
-						for y in xrange(ny):
-							for z in xrange(nz):
-								if (image[z,x,y] == saveTheColors[colorIdx]):
-									hasSomeOne = True
-									chains3D[addr(x,y,z)] = 1
-					
-					# print "Working task: " +str(startImage) + "-" + str(endImage) + " [hasSomeOne: " + str(hasSomeOne) +"]"
-					
-				# Compute the boundary complex of the quotient cell
-				# ------------------------------------------------------------
-				objectBoundaryChain = None
-				if (calculateout == True) and (len(chains3D_old) > 0):
-					objectBoundaryChain = larBoundaryChain(bordo3,chains3D_old)
-						
-				# Save
-				if (calculateout == True):
-					if (objectBoundaryChain != None):
-						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing]"
-						computeMutex.acquire()
-						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing INLOCK]"
-						writeOffsetToFile( fileToWrite, np.array([zStart,xStart,yStart], dtype=int32) )
-						fileToWrite.write( bytearray( np.array(objectBoundaryChain.toarray().astype('b').flatten()) ) )
-						computeMutex.release()
-				else:
-					if (hasSomeOne != False):
-						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing]"
-						computeMutex.acquire()
-						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Writing INLOCK]"
-						writeOffsetToFile( fileToWrite, np.array([zStart,xStart,yStart], dtype=int32) )
-						fileToWrite.write( bytearray( np.array(chains3D, dtype=np.dtype('b')) ) )
-						computeMutex.release()
-	except:
-		exc_type, exc_value, exc_traceback = sys.exc_info()
-		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
-		sys.exit(2)			
-
-def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,DIR_O):
-	beginImageStack = 0
-	endImage = beginImageStack
-	
-	fileName = "selettori-"
-	if (calculateout == True):
-		fileName = "output-"
-	
-	saveTheColors = centroidsCalc
-	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )	
-	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
-	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
-	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
-
-	processPool = max(1, multiprocessing.cpu_count()/2)
-	print "Starting pool with: " + str(processPool)
-
-	try:
-		pool = multiprocessing.Pool(processPool)
-		with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb+") as newFile:
-			print 'Start pool'
-		
-			for j in xrange(imageDepth/imageDz):
-				startImage = endImage
-				endImage = startImage + imageDz
-				print "Added task: " + str(j) + " -- (" + str(startImage) + "," + str(endImage) + ")"
-				pool.apply_async(computeChainsThread, args = (startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,newFile, ))
-
-			print "Waiting for completion..."
-			pool.close()
-			pool.join()
-	except:
-		exc_type, exc_value, exc_traceback = sys.exc_info()
-		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
-		sys.exit(2)		
-
-
-def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
 	bordo3 = None
 	if (calculateout == True):
 		with open(BORDER_FILE, "r") as file:
@@ -218,14 +84,139 @@ def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, 
 			DATA = np.asarray(bordo3_json['DATA'], dtype=np.int8)
 			bordo3 = csr_matrix((DATA,COL,ROW),shape=(ROWCOUNT,COLCOUNT));
 
+	xEnd, yEnd = 0,0
+	beginImageStack = 0
+	saveTheColors = centroidsCalc
+	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )
+
+	fileName = "pselettori-"
+	if (calculateout == True):
+		fileName = "poutput-"
+	fileName = fileName + str(startImage) + "_" + str(endImage) + "-"
+
+	returnProcess = 0
+
+	try:
+		log(2, [ "Working task: " +str(startImage) + "-" + str(endImage) + " [loading colors]" ])
+		theImage,colors,theColors = pngstack2array3d(imageDir, startImage, endImage, colors, pixelCalc, centroidsCalc)		
+		# theColors = theColors.reshape(1,colors)
+		# if (sorted(theColors[0]) != saveTheColors):
+		#	log(1, [ "Error: colors have changed"] )
+		#	sys.exit(2)
+		
+		log(2, [ "Working task: " +str(startImage) + "-" + str(endImage) + " [comp loop]" ])
+		with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb") as fileToWrite:
+			for xBlock in xrange(imageHeight/imageDx):
+				# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Xblock]"
+				for yBlock in xrange(imageWidth/imageDy):
+					# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Yblock]"
+					xStart, yStart = xBlock * imageDx, yBlock * imageDy
+					xEnd, yEnd = xStart+imageDx, yStart+imageDy
+							
+					image = theImage[:, xStart:xEnd, yStart:yEnd]
+					nz,nx,ny = image.shape
+
+					# Compute a quotient complex of chains with constant field
+					# ------------------------------------------------------------
+
+					chains3D_old = [];
+					chains3D = None
+					hasSomeOne = False
+					if (calculateout != True):
+						chains3D = np.zeros(nx*ny*nz, dtype=np.int32)
+							
+					zStart = startImage - beginImageStack;
+
+					def addr(cx,cy,cz): return cx + (nx) * (cy + (ny) * (cz))
+							
+					if (calculateout == True):
+						for x in xrange(nx):
+							for y in xrange(ny):
+								for z in xrange(nz):
+									if (image[z,x,y] == saveTheColors[colorIdx]):
+										chains3D_old.append(addr(x,y,z))
+					else:
+						for x in xrange(nx):
+							for y in xrange(ny):
+								for z in xrange(nz):
+									if (image[z,x,y] == saveTheColors[colorIdx]):
+										hasSomeOne = True
+										chains3D[addr(x,y,z)] = 1
+						
+						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [hasSomeOne: " + str(hasSomeOne) +"]"
+						
+					# Compute the boundary complex of the quotient cell
+					# ------------------------------------------------------------
+					objectBoundaryChain = None
+					if (calculateout == True) and (len(chains3D_old) > 0):
+						objectBoundaryChain = larBoundaryChain(bordo3,chains3D_old)
+							
+					# Save
+					if (calculateout == True):
+						if (objectBoundaryChain != None):
+							writeOffsetToFile( fileToWrite, np.array([zStart,xStart,yStart], dtype=int32) )
+							fileToWrite.write( bytearray( np.array(objectBoundaryChain.toarray().astype('b').flatten()) ) )
+					else:
+						if (hasSomeOne != False):
+							writeOffsetToFile( fileToWrite, np.array([zStart,xStart,yStart], dtype=int32) )
+							fileToWrite.write( bytearray( np.array(chains3D, dtype=np.dtype('b')) ) )
+	except:
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
+		returnProcess = 2
+
+	return returnProcess
+
+processRes = []
+def collectResult(resData):
+	processRes.append(resData)
+
+def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,BORDER_FILE, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,DIR_O):
+	beginImageStack = 0
+	endImage = beginImageStack
+	
+	saveTheColors = centroidsCalc
+	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )	
+	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
+	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
+	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
+
+	processPool = max(1, multiprocessing.cpu_count()/2)
+	log(2, [ "Starting pool with: " + str(processPool) ])
+
+	try:
+		pool = multiprocessing.Pool(processPool)
+		log(2, [ 'Start pool' ])
+		
+		for j in xrange(imageDepth/imageDz):
+			startImage = endImage
+			endImage = startImage + imageDz
+			log(2, [ "Added task: " + str(j) + " -- (" + str(startImage) + "," + str(endImage) + ")" ])
+			pool.apply_async(computeChainsThread, args = (startImage,endImage,imageHeight,imageWidth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,BORDER_FILE, colors,pixelCalc,centroidsCalc, colorIdx,INPUT_DIR,DIR_O, ), callback = collectResult)
+
+		log(2, [ "Waiting for completion..." ])
+		pool.close()
+		pool.join()
+
+		log(1, [ "Completed: " + str(processRes) ])
+		if (sum(processRes) > 0):
+			sys.exit(2)
+	except:
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
+		sys.exit(2)		
+
+
+def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
 	imageHeight,imageWidth = getImageData(INPUT_DIR+str(BEST_IMAGE)+PNG_EXTENSION)
 	imageDepth = countFilesInADir(INPUT_DIR)
 	
 	Nx,Ny,Nz = imageHeight/imageDx, imageWidth/imageDx, imageDepth/imageDz
 	try:
 		pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
-		print "Compute chains"
-		startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,bordo3, colors,pixelCalc,centroidsCalc, coloridx,INPUT_DIR,DIR_O)
+		startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,BORDER_FILE, colors,pixelCalc,centroidsCalc, coloridx,INPUT_DIR,DIR_O)
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
