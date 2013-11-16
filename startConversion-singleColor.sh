@@ -355,7 +355,7 @@ for binOut in $COMPUTATION_DIR_BIN/output-*.bin; do
 	touch $STL_OUT_FILE
 	for stlFile in $STL_DIR/output-*-$outputId.stl; do
 		cat $stlFile >> $STL_OUT_FILE
-		rm $stlFile
+		rm -f $stlFile >> $LOGFILE 2>&1
 	done
 	
 	echo "Wavefront model $STL_OUT_FILE ready."
