@@ -97,22 +97,23 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 	returnProcess = 0
 
 	try:
-		log(2, [ "Working task: " +str(startImage) + "-" + str(endImage) + " [loading colors]" ])
-		theImage,colors,theColors = pngstack2array3d(imageDir, startImage, endImage, colors, pixelCalc, centroidsCalc)		
-		# theColors = theColors.reshape(1,colors)
-		# if (sorted(theColors[0]) != saveTheColors):
-		#	log(1, [ "Error: colors have changed"] )
-		#	sys.exit(2)
-		
-		log(2, [ "Working task: " +str(startImage) + "-" + str(endImage) + " [comp loop]" ])
-		with open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb") as fileToWrite:
+		fileToWrite = open(DIR_O+'/'+fileName+str(saveTheColors[colorIdx])+BIN_EXTENSION, "wb")
+		try:
+			log(2, [ "Working task: " +str(startImage) + "-" + str(endImage) + " [loading colors]" ])
+			theImage,colors,theColors = pngstack2array3d(imageDir, startImage, endImage, colors, pixelCalc, centroidsCalc)		
+			# theColors = theColors.reshape(1,colors)
+			# if (sorted(theColors[0]) != saveTheColors):
+			#	log(1, [ "Error: colors have changed"] )
+			#	sys.exit(2)
+			
+			log(2, [ "Working task: " +str(startImage) + "-" + str(endImage) + " [comp loop]" ])
 			for xBlock in xrange(imageHeight/imageDx):
 				# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Xblock]"
 				for yBlock in xrange(imageWidth/imageDy):
 					# print "Working task: " +str(startImage) + "-" + str(endImage) + " [Yblock]"
 					xStart, yStart = xBlock * imageDx, yBlock * imageDy
 					xEnd, yEnd = xStart+imageDx, yStart+imageDy
-							
+								
 					image = theImage[:, xStart:xEnd, yStart:yEnd]
 					nz,nx,ny = image.shape
 
@@ -124,11 +125,11 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 					hasSomeOne = False
 					if (calculateout != True):
 						chains3D = np.zeros(nx*ny*nz, dtype=np.int32)
-							
+								
 					zStart = startImage - beginImageStack;
 
 					def addr(cx,cy,cz): return cx + (nx) * (cy + (ny) * (cz))
-							
+								
 					if (calculateout == True):
 						for x in xrange(nx):
 							for y in xrange(ny):
@@ -142,9 +143,9 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 									if (image[z,x,y] == saveTheColors[colorIdx]):
 										hasSomeOne = True
 										chains3D[addr(x,y,z)] = 1
-						
-						# print "Working task: " +str(startImage) + "-" + str(endImage) + " [hasSomeOne: " + str(hasSomeOne) +"]"
-						
+							
+					# print "Working task: " +str(startImage) + "-" + str(endImage) + " [hasSomeOne: " + str(hasSomeOne) +"]"
+							
 					# Compute the boundary complex of the quotient cell
 					# ------------------------------------------------------------
 					objectBoundaryChain = None
@@ -160,6 +161,14 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 						if (hasSomeOne != False):
 							writeOffsetToFile( fileToWrite, np.array([zStart,xStart,yStart], dtype=int32) )
 							fileToWrite.write( bytearray( np.array(chains3D, dtype=np.dtype('b')) ) )
+		except:
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+			log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
+			returnProcess = 2
+		finally:
+			fileToWrite.close()
+		# -------------------------------------------------------------------------
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
