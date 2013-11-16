@@ -202,6 +202,8 @@ def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageD
 		log(1, [ "Completed: " + str(processRes) ])
 		if (sum(processRes) > 0):
 			sys.exit(2)
+		else:
+			sys.exit(0)
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
