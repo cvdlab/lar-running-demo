@@ -25,7 +25,7 @@ from Queue import Queue
 # Logging & Timer 
 # ------------------------------------------------------------
 
-logging_level = 0; 
+logging_level = 2; 
 
 # 0 = no_logging
 # 1 = few details
