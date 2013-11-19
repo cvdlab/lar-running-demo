@@ -207,17 +207,18 @@ def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageD
 		log(2, [ "Waiting for completion..." ])
 		pool.close()
 		pool.join()
-
-		log(1, [ "Completed: " + str(processRes) ])
-		if (sum(processRes) > 0):
-			sys.exit(2)
-		else:
-			sys.exit(0)
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
 		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
-		sys.exit(2)		
+		sys.exit(2)
+		
+	log(1, [ "Completed: " + str(processRes) ])
+	if (sum(processRes) > 0):
+		sys.exit(2)
+	else:
+		sys.exit(0)
+
 
 
 def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
