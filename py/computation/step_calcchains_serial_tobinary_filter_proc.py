@@ -18,8 +18,8 @@ import multiprocessing
 from multiprocessing import Process, Value, Lock
 from Queue import Queue
 # cython stuf. not used now
-# import pyximport; pyximport.install()
-# import calc_chains_helper as cch
+import pyximport; pyximport.install()
+import calc_chains_helper as cch
 
 # ------------------------------------------------------------
 # Logging & Timer 
@@ -128,22 +128,11 @@ def computeChainsThread(startImage,endImage,imageHeight,imageWidth, imageDx,imag
 								
 					zStart = startImage - beginImageStack;
 
-					def addr(cx,cy,cz): return cx + (nx) * (cy + (ny) * (cz))
-								
 					if (calculateout == True):
-						for x in xrange(nx):
-							for y in xrange(ny):
-								for z in xrange(nz):
-									if (image[z,x,y] == saveTheColors[colorIdx]):
-										chains3D_old.append(addr(x,y,z))
+						chains3D_old = cch.setList(nx,ny,nz, colorIdx, image,saveTheColors)
 					else:
-						for x in xrange(nx):
-							for y in xrange(ny):
-								for z in xrange(nz):
-									if (image[z,x,y] == saveTheColors[colorIdx]):
-										hasSomeOne = True
-										chains3D[addr(x,y,z)] = 1
-							
+						hasSomeOne,chains3D = cch.setListNP(nx,ny,nz, colorIdx, image,saveTheColors)
+			
 					# print "Working task: " +str(startImage) + "-" + str(endImage) + " [hasSomeOne: " + str(hasSomeOne) +"]"
 							
 					# Compute the boundary complex of the quotient cell
@@ -190,6 +179,7 @@ def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageD
 	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
 	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)
+	returnValue = 2
 
 	processPool = max(1, multiprocessing.cpu_count()/2)
 	log(2, [ "Starting pool with: " + str(processPool) ])
@@ -207,33 +197,33 @@ def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageD
 		log(2, [ "Waiting for completion..." ])
 		pool.close()
 		pool.join()
+		
+		log(1, [ "Completed: " + str(processRes) ])
+		if (sum(processRes) == 0):
+			returnValue = 0		
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
 		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
-		sys.exit(2)
-		
-	log(1, [ "Completed: " + str(processRes) ])
-	if (sum(processRes) > 0):
-		sys.exit(2)
-	else:
-		sys.exit(0)
 
-
+	return returnValue
 
 def runComputation(imageDx,imageDy,imageDz, colors,coloridx,calculateout, V,FV, INPUT_DIR,BEST_IMAGE,BORDER_FILE,DIR_O):
 	imageHeight,imageWidth = getImageData(INPUT_DIR+str(BEST_IMAGE)+PNG_EXTENSION)
 	imageDepth = countFilesInADir(INPUT_DIR)
-	
 	Nx,Ny,Nz = imageHeight/imageDx, imageWidth/imageDx, imageDepth/imageDz
+	returnValue = 2
+	
 	try:
 		pixelCalc, centroidsCalc = centroidcalc(INPUT_DIR, BEST_IMAGE, colors)
-		startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,BORDER_FILE, colors,pixelCalc,centroidsCalc, coloridx,INPUT_DIR,DIR_O)
+		returnValue = startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageDz, Nx,Ny,Nz, calculateout,BORDER_FILE, colors,pixelCalc,centroidsCalc, coloridx,INPUT_DIR,DIR_O)
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
 		log(1, [ "Error: " + ''.join('!! ' + line for line in lines) ])  # Log it or whatever here
-		sys.exit(2)
+		returnValue = 2
+		
+	sys.exit(returnValue)
 	
 def main(argv):
 	ARGS_STRING = 'Args: -r -b <borderfile> -x <borderX> -y <borderY> -z <borderZ> -i <inputdirectory> -c <colors> -d <coloridx> -o <outputdir> -q <bestimage>'
