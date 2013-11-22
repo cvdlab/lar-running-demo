@@ -1,5 +1,6 @@
 *.class
 *.pyc
+*.log
 
 # Package Files #
 *.jar
@@ -12,3 +13,7 @@ log/
 
 #
 !/java/*.jar
+
+# docs
+/docs/*.pdf
+/docs/*.log
