@@ -17,3 +17,4 @@ log/
 # docs
 /docs/*.pdf
 /docs/*.log
+/docs/*.out

@@ -1,3 +1,16 @@
-\begin{thebibliography}{}
+\begin{thebibliography}{1}
+
+\bibitem{dicarlo2013linear}
+Antonio DiCarlo, Alberto Paoluzzi, and Vadim Shapiro.
+\newblock Linear algebraic representation for topological structures.
+\newblock {\em Computer-Aided Design}, 2013.
+\newblock Article in press.
+
+\bibitem{Furiani2013}
+Francesco Furiani.
+\newblock Hpc acceleration of topological operators in the linear algebric
+  representation.
+\newblock Master's thesis, University of Rome, Roma Tre, Faculty of
+  Engineering, 2013.
 
 \end{thebibliography}

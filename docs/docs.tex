@@ -15,7 +15,8 @@
 \usepackage[USenglish]{babel} %francais, polish, spanish, ...
 \usepackage[T1]{fontenc}
 \usepackage[ansinew]{inputenc}
-
+\usepackage[plainpages=false]{hyperref}	% generazione di collegamenti ipertestuali su indice e riferimenti
+\usepackage[all]{hypcap} % per far si che i link ipertestuali alle immagini puntino all'inizio delle stesse e non alla didascalia 
 \usepackage{lmodern} %Type1-font for non-english texts and characters
 
 
@@ -40,7 +41,30 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amsfonts}
-
+%
+\usepackage{xcolor}
+\definecolor{whitesmoke}{HTML}{F5F5F5}
+%
+\usepackage{listings}
+\lstdefinestyle{bash-style}{
+  captionpos=b,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  tabsize=2,
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  xleftmargin=\parindent,
+  language=bash,
+  showstringspaces=false,
+  % basicstyle=\tiny, %\footnotesize\ttfamily,
+  basicstyle={\fontsize{8pt}{8pt}\ttfamily},
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!40!black},
+  stringstyle=\color{brown},
+  %identifierstyle=\color{blue},
+  backgroundcolor=\color{whitesmoke}
+}
 
 %% Line Spacing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\usepackage{setspace}
@@ -92,7 +116,29 @@ This document contains the documentation for the software <<lar-running-demo>> (
 
 LRD is a software that enables automatic model extraction from a set of medical images (like MRI). Such feature is achieved through a process in which a user gives input and other parameters to start the computation.
 
-The whole software is based on the mathematical LAR framework and
+The whole software is based on the mathematical LAR framework\cite{dicarlo2013linear} and the OpenCL based framework OCLAR\cite{Furiani2013}.
+
+\chapter{Using}\label{using}
+The program consists of 3 bash scripts that can be used from a *NIX compatible shell:
+\begin{itemize}
+	\item \texttt{startConversion.sh}
+	\item \texttt{startConversion-singleColor.sh}
+	\item \texttt{visualize.sh}
+\end{itemize}
+
+Every script contains a \texttt{-h} option that can be used to discover the relevant options for each script as in \ref{lst:help-example}
+\begin{lstlisting}[style=bash-style,label=lst:help-example]
+# ./startConversion.sh -?
+===================
+LAR Model extractor
+===================
+Either run without args or with
+To use args enable it with -u
+-d <input images>       : Directory containing input images
+-f <best image>         : Image to quantize on
+-q <colors>             : Number of colors to quantize (min 2)
+-c                      : Use OpenCL
+\end{lstlisting}
 
 
 \chapter{Some small hints}\label{hints}
@@ -144,7 +190,7 @@ as if the content of the subfile would be at the place of the \verb#\input#-Comm
 %% ==> You need to run BibTeX for this (Project | Properties... | Uses BibTeX)
 \addcontentsline{toc}{chapter}{Bibliography} %'Bibliography' into toc
 \nocite{*} %Even non-cited BibTeX-Entries will be shown.
-\bibliographystyle{alpha} %Style of Bibliography: plain / apalike / amsalpha / ...
+\bibliographystyle{plain} %Style of Bibliography: plain / apalike / amsalpha / ...
 \bibliography{literature} %You need a file 'literature.bib' for this.
 
 %% The List of Figures
