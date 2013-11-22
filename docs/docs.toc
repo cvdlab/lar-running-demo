@@ -1,0 +1,9 @@
+\select@language {USenglish}
+\contentsline {chapter}{\numberline {1}Purpose}{4}
+\contentsline {chapter}{\numberline {2}Some small hints}{5}
+\contentsline {section}{\numberline {2.1}German Umlauts and other Language Specific Characters}{5}
+\contentsline {section}{\numberline {2.2}References}{5}
+\contentsline {section}{\numberline {2.3}Dividing Large Documents}{5}
+\vspace *{\baselineskip }
+\contentsline {chapter}{Bibliography}{5}
+\contentsline {chapter}{List of Figures}{6}
