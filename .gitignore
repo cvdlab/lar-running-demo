@@ -18,3 +18,4 @@ log/
 /docs/*.pdf
 /docs/*.log
 /docs/*.out
+/docs/*.gz

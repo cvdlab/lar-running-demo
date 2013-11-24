@@ -12,7 +12,7 @@
 
 
 %% Language %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage[USenglish]{babel} %francais, polish, spanish, ...
+\usepackage[british]{babel} %francais, polish, spanish, ...
 \usepackage[T1]{fontenc}
 \usepackage[ansinew]{inputenc}
 \usepackage[plainpages=false]{hyperref}	% generazione di collegamenti ipertestuali su indice e riferimenti
@@ -116,7 +116,43 @@ This document contains the documentation for the software <<lar-running-demo>> (
 
 LRD is a software that enables automatic model extraction from a set of medical images (like MRI). Such feature is achieved through a process in which a user gives input and other parameters to start the computation.
 
-The whole software is based on the mathematical LAR framework\cite{dicarlo2013linear} and the OpenCL based framework OCLAR\cite{Furiani2013}.
+The whole software is based on the mathematical LAR framework\cite{dicarlo2013linear} and the OpenCL based framework "HPC LAR"\cite{Furiani2013}.
+
+\chapter{Prerequisites}\label{prerequisites}
+
+Although the system checks for needed prerequisites, they're listed here for easy of use.
+
+\begin{itemize}
+\item *NIX compatible operating system
+\item Bash
+\item Pyhton (at least 2.7)
+\item Java (at least 1.7) \footnotemark[1]
+\item OpenCL libraries with a compatible device \footnotemark[1]
+\end{itemize}
+\footnotetext[1]{These are not mandatory, but if present will speed-up the computation process.}
+
+\section{Pyhton modules}
+The system is mostly wrote in Python and some modules are necessary for its execution. They can installed through your installer of choice, for example \texttt{easy\_install} or \texttt{pip}, or they might be already part of your Python distribution. Only one, requires manual installation.
+
+\begin{enumerate}
+\item NumPy
+\item SciPy
+\item Cython
+\item Simplejson (or Json)
+\item Requests
+\item Termcolor
+\item Png
+\item Matplotlib
+\item Logging
+\item Multiproccessing
+\item PyPlasm (\url{https://github.com/plasm-language/pyplasm})
+\end{enumerate}
+
+\section{OpenCL}
+Using OpenCL requires installation of proper platform accelerated drivers and libraries. Check the documentation of your vendor to do so.
+
+\section{Java}
+A standard Java installation is needed to us OpenCL. Setting \texttt{\$JAVA\_HOME} is mandatory to ensue correct execution, especially on NVIDIA platforms.
 
 \chapter{Using}\label{using}
 The program consists of 3 bash scripts that can be used from a *NIX compatible shell:
@@ -127,6 +163,7 @@ The program consists of 3 bash scripts that can be used from a *NIX compatible s
 \end{itemize}
 
 Every script contains a \texttt{-h} option that can be used to discover the relevant options for each script as in \ref{lst:help-example}
+
 \begin{lstlisting}[style=bash-style,label=lst:help-example]
 @> ./startConversion.sh -?
 ===================
@@ -140,41 +177,15 @@ To use args enable it with -u
 -c                      : Use OpenCL
 \end{lstlisting}
 
+Command line switches are not mandatory: every script has an interactive shell in which you can input, step by step, the correct input for the program.
 
-\chapter{Some small hints}\label{hints}
+\section{Input}
+\subsection{startConversion scripts}
 
-\section{German Umlauts and other Language Specific Characters}\label{umlauts}
-You can type german umlauts like 'ä', 'ö', or 'ü' directly in this file.
-This is also true for other language specific characters like 'é', 'è' etc.
-
-There are problems with automatic hyphenation when using language
-specific characters and OT1-encoded fonts. In this case, use a
-T1-encoded Type1-font like the Latin Modern font family (\verb#\usepackage{lmodern}#).
+\subsection{visualize}
 
 
-\section{References}\label{references}
-Using the commands \verb#\label{name}# and \verb#\ref{name}# you are able
-to use references in your document. Advantage: You do not need to think
-about numerations, because \LaTeX\ is doing that for you.
 
-For example, in section \ref{dividing} on page \pageref{dividing} hints for
-dividing large documents are given.
-
-Certainly, references do also work for tables, figures, formulas\ldots
-
-Please notice, that \LaTeX\ usually needs more than one run (mostly 2) to
-resolve those references correctly.
-
-
-\section{Dividing Large Documents}\label{dividing}
-You can divide your \LaTeX-Document into an arbitrary number of \TeX-Files
-to avoid too big and therefore unhandy files (e.g. one file for every chapter).
-
-For this, you insert in your main file (this one) for every subfile
-the command '\verb#\input{subfile}#'. This leads to the same behavior
-as if the content of the subfile would be at the place of the \verb#\input#-Command.
-
-%% <== End of hints
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -194,9 +205,9 @@ as if the content of the subfile would be at the place of the \verb#\input#-Comm
 \bibliography{literature} %You need a file 'literature.bib' for this.
 
 %% The List of Figures
-\clearpage
-\addcontentsline{toc}{chapter}{List of Figures}
-\listoffigures
+%\clearpage
+%\addcontentsline{toc}{chapter}{List of Figures}
+%\listoffigures
 
 %% The List of Tables
 %\clearpage
