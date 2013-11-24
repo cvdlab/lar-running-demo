@@ -19,3 +19,4 @@ log/
 /docs/*.log
 /docs/*.out
 /docs/*.gz
+/docs/*.aux
