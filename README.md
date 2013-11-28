@@ -3,7 +3,7 @@ lar-running-demo
 
 A demo beta software (set of scripts) to extract models from medical images.
 
-Script has been tested on Ubuntu 12.04 LTS (x64).
+Spftware has been tested on Ubuntu 12.04 LTS (x64).
 
 MIT License.
 
@@ -12,6 +12,7 @@ Prerequisites
 Every script check for its own prerequisites at the right time.
 A list of them are:
 
+* *NIX like OS (untested on Windows)
 * Bash
 * Python (*PyPlasm, SciPy, NumPy, Cython, pypng, simplejson or json, requests, termcolor, matplotlib*)
 * Java
