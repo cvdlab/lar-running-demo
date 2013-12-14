@@ -175,7 +175,9 @@ def startComputeChains(imageHeight,imageWidth,imageDepth, imageDx,imageDy,imageD
 	endImage = beginImageStack
 	
 	saveTheColors = centroidsCalc
-	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )	
+	log(2, [ centroidsCalc ])
+	saveTheColors = np.array( sorted(saveTheColors.reshape(1,colors)[0]), dtype=np.int )
+	log(2, [ saveTheColors ])
 	# print str(imageHeight) + '-' + str(imageWidth) + '-' + str(imageDepth)
 	# print str(imageDx) + '-' + str(imageDy) + '-' + str(imageDz)
 	# print str(Nx) + '-' + str(Ny) + '-' + str(Nz)

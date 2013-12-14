@@ -13,6 +13,9 @@ from scipy import ndimage
 import struct
 import os
 
+# Default is 10
+NOISE_SHAPE_DETECT=10
+
 def getImageData(fileName):
 	def get_image_info(data):
 		if is_png(data):
@@ -58,6 +61,9 @@ def centroidcalc(path, IMAGE, colors):
 	# -----------------------------------------------------------------------------
 	# selecting colors for quantization, via clustering on first image ------------
 	# -----------------------------------------------------------------------------
+	#denoise before selection
+	# image3d[0] = ndimage.median_filter(image3d[0], NOISE_SHAPE_DETECT)
+	
 	# reshaping the pixels matrix
 	pixel = reshape(image3d[0],(image3d[0].shape[0]*image3d[0].shape[1],1))
 	# performing the clustering
@@ -95,7 +101,7 @@ def pngstack2array3d(path, MIN_SLICE, MAX_SLICE, colors, pixel, centroids):
 
 		# image denoising 
 		# -------------------------------------------------------------------------
-		image3d[page] = ndimage.median_filter(image3d[page], 10)
+		image3d[page] = ndimage.median_filter(image3d[page], NOISE_SHAPE_DETECT)
 
 		# field quantization 
 		# -------------------------------------------------------------------------
