@@ -53,6 +53,7 @@ def mergeFiles(listFile, outDir):
 							vertexEnum = vertexEnum + 1
 							outVtxFile.write(currLine)
 						elif currLine.startswith("f"):
+							triFace = currLine.split()
 							outFacesFile.write(triFace[0] + ' ' + str(int(triFace[1])+currOffset) + ' ' + str(int(triFace[2])+currOffset) + ' ' + str(int(triFace[3])+currOffset)+ '\n')
 				# log
 				log(1, [ "VtxCount: " + str(vertexEnum) ])
