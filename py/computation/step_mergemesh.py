@@ -44,7 +44,6 @@ def mergeFiles(listFile, outDir):
 	with file(outDir+'/mergedMesh-Vtx.lst', 'w') as outVtxFile:
 		with file(outDir+'/mergedMesh-Faces.lst', 'w') as outFacesFile:
 			vertexEnum = 0
-			firstFile = True
 		
 			for currentMesh in listFile:
 				with file(currentMesh) as currFile:
@@ -54,13 +53,8 @@ def mergeFiles(listFile, outDir):
 							vertexEnum = vertexEnum + 1
 							outVtxFile.write(currLine)
 						elif currLine.startswith("f"):
-							if (firstFile == True):
-								outFacesFile.write(currLine)
-							else:
-								triFace = currLine.split()
-								outFacesFile.write(triFace[0] + ' ' + str(int(triFace[1])+currOffset) + ' ' + str(int(triFace[2])+currOffset) + ' ' + str(int(triFace[3])+currOffset)+ '\n')
-				# first file done
-				firstFile = False
+							outFacesFile.write(triFace[0] + ' ' + str(int(triFace[1])+currOffset) + ' ' + str(int(triFace[2])+currOffset) + ' ' + str(int(triFace[3])+currOffset)+ '\n')
+				# log
 				log(1, [ "VtxCount: " + str(vertexEnum) ])
 	
 	with file(outDir+'/mergedMesh.obj', 'w') as finalMesh:
